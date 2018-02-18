@@ -9,7 +9,7 @@ folder = {0:'.\devices',
 for directory, subdirectories, files in os.walk(root_dir):
 	for file in files:
 		if directory == folder[mode]:
-			print directory
+			#print directory
 			#if file == 'Amp.bwdevice':
-			print(file)
+			print '-'+file
 			magic(file, directory)
