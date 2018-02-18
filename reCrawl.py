@@ -1,12 +1,13 @@
 import os
 
-root_dir = '.\devices\output'
+root_dir = '.\devices\old devices\output'
 output = {}
 
 for directory, subdirectories, files in os.walk(root_dir):
 	for file in files:
-		if directory == '.\devices\output':
+		if directory == root_dir:
 			with open(directory + '\\' + file, 'r') as f:
+				print '-'+file
 				text = f.readlines()
 				for lines in text:
 					index = 0

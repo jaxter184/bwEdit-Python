@@ -3,6 +3,10 @@ import struct
 from tables import *
 
 mode = 3
+#0:coords,
+#1:settings,
+#2:classes,
+#3:convert
 
 def coords(text):
 	output = ""
@@ -68,7 +72,9 @@ def classes(text):
 	return output[1:]
 
 def convert(text):
-	output = text[:40] #BtWg header
+	#output = text[:39] #BtWg header
+	#output += '1'
+	output = 'BtWg00010001008d000016a00000000000000000'
 	output += '{\n\t'
 	gettingClass = 0
 	ignore = 0
@@ -112,14 +118,24 @@ def convert(text):
 						parse2Type = ord(text[offset])
 						offset += 1
 						value = ''
-						if parse2Type == 5: #boolean
+						if parse2Type == 0x1: #8 bit int
+							val = ord(text[offset])
+							if val & 0x80:
+								val -= 0x100
+								neg = 1
+							value += str(val)
+							offset += 1
+						elif parse2Type == 5: #boolean
 							if offset+1 > len(text):
-								print("error 502: how the f$ck did you get here, this should only happen if there is a boolean field at the end of the file")
+								print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
 							if ord(text[offset]): #pick+8 + parse+4 +1 : pick+8 + parse+8 +1
 								value = 'true'
 							else:
 								value += 'false'
 							offset += 1
+						elif parse2Type == 3: #16 bit int
+							value += str(bigOrd(text[offset:offset + 4]))
+							offset += 4
 						elif parse2Type == 8: #string
 							if offset+4 > len(text):
 								print("error 802: the parse code says to go further than the end of the file :/")
@@ -134,9 +150,11 @@ def convert(text):
 							for i in range(16):
 								if i in [4,6,8,10]:
 									value += '-'
-								value += hex(ord(text[offset+i]))[2:]
+								value += "{0:0{1}x}".format(ord(text[offset+i]),2)
 							value += '"'
 							offset += 16
+						else:
+							print "missing type in section 0"
 						output += '"' + key + '" : ' + value + ',\n' + '\t'*tabs
 						ignore += offset - pick - 1
 						#if parse2Type == 21:
@@ -154,8 +172,7 @@ def convert(text):
 					currentSection = 2
 					gettingClass = 1
 			elif currentSection == 2:
-				#print tabs
-				if tabs > 0:
+				if tabs > 0: #for safety
 					#print hex(pick) + ', ' + str(output.count('\n'))
 					if pick < len(text):
 						#print(bigOrd(text[pick:pick+4]))
@@ -167,18 +184,31 @@ def convert(text):
 							if classNum == 0x3: #end of array
 								#print tabs
 								output = output[:-1 - tabs]
+								if output[-2:] == ',\n': #ugh this is such an ugly way to do this
+									output = output[:-1]
 								tabs -= 2
-								output += '\n' + '\t'*tabs + ']'
+								output = output[:-1] + '\n' + '\t'*tabs + ']'
 								arrayLevels = arrayLevels[:-1]
 								gettingClass = 0
 							elif classNum == 0x1: #object references
-								output = output[:-1-tabs] + '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' },\n' + '\t'*(tabs-1) + '{'
+								output = output[:-1 - tabs]
+								if output[-2:] == ',\n':
+									output = output[:-1]
+								if output[-2:] == '[\n': #im pretty sure there's a nicer way to do this
+									output += '\t'*(tabs-1)
+								output += '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' },\n' + '\t'*(tabs-1) + '{ '
 								offset += 4
 							else:
 								if classNum in objs:
+									if output[-1:] != '{':
+										output = output[:-1]
 									output += '\n' + '\t'*tabs + 'class : "' + objs[classNum] + '(' + str(classNum) + ')",\n' + '\t'*tabs + 'object_id : ' + str(objid) + ',\n' + '\t'*tabs + 'data :\n' + '\t'*tabs + '{'
 								else:
-									print 'wtf ' + str(classNum) + ': ' + hex(pick) + ', ' + str(output.count('\n') + 1)
+									output = output[:-1] + '\n' + '\t'*tabs + 'class : "' + "missing_class" + '(' + str(classNum) + ')",\n' + '\t'*tabs + 'object_id : ' + str(objid) + ',\n' + '\t'*tabs + 'data :\n' + '\t'*tabs + '{'
+									if not classNum in [2050]:
+										print "missing class " + str(classNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
+									else:
+										print "pesky new class"
 								objid += 1
 								tabs += 1
 								firstField = 1
@@ -194,36 +224,56 @@ def convert(text):
 								else:
 									firstField = 0
 								if fieldNum in params:
-									output += '\n' + '\t'*tabs + '"' + params[fieldNum] +  '(' + str(fieldNum) + ')" :'
+									output += '\n' + '\t'*tabs + '"' + params[fieldNum] +  '(' + str(fieldNum) + ')" : '
 								else:
-									output += '\n' + '\t'*tabs + '"' + "MISSING FIELD" +  '(' + str(fieldNum) + ')" :'
-									if not fieldNum in [7489, 7490, 7243]:
-										print tabs										
+									output += '\n' + '\t'*tabs + '"' + "missing_field" +  '(' + str(fieldNum) + ')" : '
+									if not fieldNum in [7489, 7490, 7243, 7235]:
+										#print tabs										
 										print "missing field " + str(fieldNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
+									else:
+										print "pesky new field"
 								parseType = ord(text[offset])
 								offset += 1
 								if flag:
 									print 'flag ' + str(fieldNum) + ' - ' + hex(parseType) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
 									flag -= 1
 								if parseType == 0xa: #null
-									output += ' null'
+									output += 'null'
 								elif parseType == 0x1: #8 bit int
-									output += ' ' + str(ord(text[offset]))
+									val = ord(text[offset])
+									if val & 0x80:
+										val -= 0x100
+										neg = 1
+									output += str(val)
 									offset += 1
 								elif parseType == 0x2: #16 bit int
-									output += ' ' + str(bigOrd(text[offset:offset + 2]))
+									val = bigOrd(text[offset:offset + 2])
+									if val & 0x8000:
+										val -= 0x10000
+									output += str(val)
 									offset += 2
-								elif parseType == 5: #boolean
+								elif parseType == 0x3: #32 bit int
+									val = bigOrd(text[offset:offset + 4])
+									if val & 0x80000000:
+										val -= 0x100000000
+										neg = 1
+									output += str(val)
+									offset += 4
+								elif parseType == 0x5: #boolean
 									if offset + 1 > len(text):
 										print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
 									if ord(text[offset]): #pick+8 + parse+4 +1 : pick+8 + parse+8 +1
-										output += ' true'
+										output += 'true'
 									else:
-										output += ' false'
+										output += 'false'
 									offset += 1
-								elif parseType == 0x7: #16 bit int
-									float = struct.unpack('d', struct.pack('Q', bigOrd(text[offset:offset + 8])))[0]
-									output += ' ' + str(float)
+								elif parseType == 0x6: #float
+									flVal = struct.unpack('f', struct.pack('L', bigOrd(text[offset:offset + 4])))[0]
+									output += str(flVal)
+									offset += 4
+								elif parseType == 0x7: #double
+									dbVal = struct.unpack('d', struct.pack('Q', bigOrd(text[offset:offset + 8])))[0]
+									output += str(dbVal)
 									offset += 8
 								elif parseType == 0x8: #string
 									if offset + 1 > len(text):
@@ -233,35 +283,39 @@ def convert(text):
 									string = ''
 									sFormat = 0 #0:utf-8, 1:utf-16
 									if (stringLength & 0x80000000):
-										print 'utf-16 string found'
+										#print 'utf-16 string found'
 										stringLength &= 0x7fffffff
 										sFormat = 1
-									if (stringLength > 10000):
-										print str(stringLength) + ' string is waaaaay too long' + hex(pick) + ', ' + str(output.count('\n') + 1)
+									#if (stringLength > 10000): #was making some code blocks not convert lol, hopefully i dont need this failsafe anymore
+									#	print str(stringLength) + ' string is waaaaay too long' + hex(pick) + ', ' + str(output.count('\n') + 1)
 									else:
-										for i in range(stringLength):
-											if sFormat:
-												if text[offset+i*2] == '\n':
-													string += '\\n'
+										if sFormat: #utf-16
+											for i in range(stringLength):
+												if ord(text[offset+i*2]): #if the first character is anything other than 0x00
+													string += '\u' + hex(bigOrd(text[offset+i*2:offset+i*2+2]))
 												else:
-													string += text[offset+i]
-											else:
+													if text[offset+i*2 + 1] == '\n':
+														string += '\\n'
+													else:
+														string += text[offset+i*2 + 1]
+										else: #utf-8
+											for i in range(stringLength):
 												if text[offset+i] == '\n':
 													string += '\\n'
 												else:
 													string += text[offset+i]
-									output += ' "' + string + '"' #pick+8 + parse+4 +1 : pick+8 + parse+4 +1 + parse2
+									output += '"' + string + '"' #pick+8 + parse+4 +1 : pick+8 + parse+4 +1 + parse2
 									offset += stringLength*(sFormat + 1)
 								elif parseType == 0x9: #object
-									output += '\n' + '\t'*tabs + '{'
+									output += '\n' + '\t'*tabs + '{ '
 									tabs += 1
 									gettingClass = 1
 								elif parseType == 0xb: #object reference
-									output += ' { object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' }'
+									output += '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' }'
 									offset += 4
 								elif parseType == 0x12: #object array
 									arrayLevels.append(tabs)
-									output += '\n' + '\t'*tabs + '[\n' + '\t'*(tabs + 1) + '{'
+									output += '\n' + '\t'*tabs + '[\n' + '\t'*(tabs + 1) + '{ '
 									tabs += 2
 									gettingClass = 1
 								elif parseType == 0x14: #map string to object
@@ -283,16 +337,23 @@ def convert(text):
 								elif parseType == 0x15: #hex value
 									if offset+16 > len(text):
 										print("aw poop")
-									output += ' "'
+									output += '"'
 									for i in range(16):
 										if i in [4,6,8,10]:
 											output += '-'
-										output += hex(ord(text[offset+i]))[2:]
+										#print "{0:0{1}x}".format(ord(text[offset+i]),2)
+										output += "{0:0{1}x}".format(ord(text[offset+i]),2)
 									output += '"'
 									offset += 16
 								elif parseType == 0x16: #color
 									output += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "color",\n' + '\t'*(tabs + 1) + 'data : [0.5, 0.5, 0.5]\n' + '\t'*tabs + '}'
 									offset += 16
+								elif parseType == 0x17: #float array
+									output += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "float[]",\n' + '\t'*(tabs + 1) + 'data : ['
+									arrayLength = bigOrd(text[offset:offset+4]) #pick+8 + parse+1 : pick+8 + parse+4 +1
+									offset += 4
+									output += ']\n' + '\t'*tabs + '}'
+									offset += arrayLength*4
 								else:
 									print 'unknown type at ' + hex(offset-1) + ', ' + str(output.count('\n') + 1)
 								if inMap == 1:
@@ -317,7 +378,7 @@ def convert(text):
 									print 'flag2 - ' + str(tabs - 1 in arrayLevels) + ': ' + hex(pick) + ', ' + str(output.count('\n') + 1)
 									flag -= 1
 								if tabs - 1 in arrayLevels:
-									output += ',\n' + '\t'*tabs + '{'
+									output += ',\n' + '\t'*tabs + '{ '
 									tabs += 1
 									gettingClass = 1
 								#print 'blank ' + hex(offset) + ', ' + str(offset - pick)
@@ -336,8 +397,8 @@ def magic(name, directory):
 		device_data = f.read()
 		output = ""
 		output = algos[mode](device_data)
-		with open(directory + '\output\edited' + name + '.txt', 'w') as text_file:
+		with open(directory + '\output\edited' + name, 'wb') as text_file:
 			text_file.write(output)
 
 magic('Amp.bwdevice', '.\devices\old devices')
-print('decoder completed')
+print('decoder imported')
