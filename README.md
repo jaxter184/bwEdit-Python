@@ -10,8 +10,8 @@ Changelog v0.3:
 -Improved .bwproject support (still doesn't work, but lists all the tracks and their names/types)  
 -Improved formatting of code and readme (to match how stylemistake does stuff)  
 -Fixed some visualizers not loading correctly  
--Changed name of reCrawl.py to collate.py
--Removed chord.py and moved contents to decoder.py
+-Changed name of reCrawl.py to collate.py  
+-Removed chord.py and moved contents to decoder.py  
 
 Didn't do much this change, but now it's a lot more usable. Some devices still don't work, but I think it's because I used the .bwdevices from the beta and tried to run them in the stable version of Bitwig.
 
