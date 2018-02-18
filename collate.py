@@ -1,6 +1,6 @@
 import os
 
-root_dir = '.\devices\old devices\output'
+root_dir = '.\output'
 output = {}
 
 for directory, subdirectories, files in os.walk(root_dir):
@@ -19,7 +19,8 @@ for directory, subdirectories, files in os.walk(root_dir):
 
 	with open('collated.txt', 'w') as fileOutput:
 		textOutput = ''
-		for params in output:
-			textOutput += str(params) + ':"' + output[params][:-1] + '",\n'
+		for params in range(output, keys=int):
+			if params in output:
+				textOutput += str(params) + ':"' + output[params][:-1] + '",\n'
 		fileOutput.write(textOutput)
 		print "done"

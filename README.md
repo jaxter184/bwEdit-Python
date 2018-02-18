@@ -1,5 +1,17 @@
 # bwConvert
-Python script for making .bwdevice files readable
+Python script for making .bwdevice files readable  
+To use, just put some .bwdevices or .bwmodulators somewhere in the folder and run the crawl.py script.  
+collate.py is just there for decoration.
+
+## Changelogs  
+
+Changelog v0.3:  
+-Improved interface (less minimal, but easier to use in my opinion)  
+-Improved .bwproject support (still doesn't work, but lists all the tracks and their names/types)  
+-Improved formatting of code and readme (to match how stylemistake does stuff)  
+-Fixed some visualizers not loading correctly  
+
+Didn't do much this change, but now it's a lot more usable. Some devices still don't work, but I think it's because I used the .bwdevices from the beta and tried to run them in the stable version of Bitwig.
 
 Changelog v0.2:  
 -Added support for modulators  
@@ -30,5 +42,10 @@ Changelog v0.1:
 -Converts map<string, object>  
 -Strings now support utf-16  
 
-Notes:  
+## Notes    
 So far it does most .bwdevices fine, there are a couple big issues with the instruments (FM4, Organ, Polysynth, Sampler, and Note MOD). Also, the converted files don't open in Bitwig. I'll have to compare them after I figure out the instrument issue to see whats up.
+
+## Contact    
+jaxter184 <[jaxter184@gmail.com]>
+
+[jaxter184@gmail.com]: mailto jaxter184@gmail.com

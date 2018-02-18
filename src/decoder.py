@@ -1,13 +1,171 @@
-from chord import *
 import struct
 from tables import *
 
 mode = 3
-#0:coords,
-#1:settings,
-#2:classes,
-#3:convert
+##:func name,	#description (allowed filetypes)
+#0:coords,		#collects the coordinates of modules in the desktop modular environment (plaintext)
+#1:settings,	#collects all field numbers used and their respective names (plaintext)
+#2:classes, 	#collects all class numbers used and their respective names (plaintext)
+#3:convert		#converts files from unreadable to plaintext .bwdevice and .bwmodulator files (unreadable)
 
+def parseField(text, parseType, stringType = 0):
+	global offset, tabs, inMap, arrayLevels, output, gettingClass, stringMode #ugh so many global variables
+	field = '' #output string
+	if parseType == 0x01:		#8 bit int
+		val = ord(text[offset])
+		if val & 0x80:
+			val -= 0x100
+			neg = 1
+		field += str(val)
+		offset += 1
+	elif parseType == 0x02:	#16 bit int
+		val = bigOrd(text[offset:offset + 2])
+		if val & 0x8000:
+			val -= 0x10000
+		field += str(val)
+		offset += 2
+	elif parseType == 0x03:	#32 bit int
+		val = bigOrd(text[offset:offset + 4])
+		if val & 0x80000000:
+			val -= 0x100000000
+			neg = 1
+		field += str(val)
+		offset += 4
+	elif parseType == 0x05:	#boolean
+		if offset + 1 > len(text):
+			print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
+		if ord(text[offset]):
+			field += 'true'
+		else:
+			field += 'false'
+		offset += 1
+	elif parseType == 0x06:	#float
+		flVal = struct.unpack('f', struct.pack('L', bigOrd(text[offset:offset + 4])))[0]
+		field += str(flVal)
+		offset += 4
+	elif parseType == 0x07:	#double
+		dbVal = struct.unpack('d', struct.pack('Q', bigOrd(text[offset:offset + 8])))[0]
+		field += str(dbVal)
+		offset += 8
+	elif parseType == 0x08:	#string
+		if stringType == 0:
+			if offset + 1 > len(text):
+				print("error 802: the parse code says to go further than the end of the file :/")
+			stringLength = bigOrd(text[offset:offset+4])
+			offset += 4
+			string = ''
+			sFormat = 0 #0:utf-8, 1:utf-16
+			if (stringLength & 0x80000000):
+				stringLength &= 0x7fffffff
+				sFormat = 1
+			else:
+				if sFormat: #utf-16
+					for i in range(stringLength):
+						if ord(text[offset+i*2]): #if the first character is anything other than 0x00
+							string += '\u' + hex(bigOrd(text[offset+i*2:offset+i*2+2]))
+						else:
+							if text[offset+i*2 + 1] == '\n':
+								string += '\\n'
+							else:
+								string += text[offset+i*2 + 1]
+				else: #utf-8
+					for i in range(stringLength):
+						if text[offset+i] == '\n':
+							string += '\\n'
+						else:
+							string += text[offset+i]
+			field += '"' + string + '"'
+			offset += stringLength*(sFormat + 1)
+		elif stringType == 1:
+			field += '"'
+			while ord(text[offset]) != 0x00:
+				field += text[offset]
+				offset += 1
+			offset += 1
+			field += '"'
+	elif parseType == 0x09:	#object
+		field += '\n' + '\t'*tabs + '{ '
+		tabs += 1
+		gettingClass = 1
+	elif parseType == 0x0a:	#null
+		field += 'null'
+	elif parseType == 0x0b:	#object reference
+		field += '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' }'
+		offset += 4
+	elif parseType == 0x0d: #nested header
+		field += '(' + str(bigOrd(text[offset:offset+4])) + ')'
+		offset += 4
+		field += text[offset:offset+40]
+		offset += 40
+		stringLength = bigOrd(text[offset:offset+4])
+		offset += 4
+		field += '"' + text[offset:offset+stringLength] + '" & placeholder'
+		offset += stringLength
+		offset += 1
+		tabs += 1
+		stringMode = 1
+	elif parseType == 0x12:	#object array
+		arrayLevels.append(tabs)
+		field += '\n' + '\t'*tabs + '[\n' + '\t'*(tabs + 1) + '{ '
+		tabs += 2
+		gettingClass = 1
+	elif parseType == 0x14:	#map string to object
+		field += '\n' + '\t'*tabs + '{\n'
+		tabs += 1
+		field += '\t'*(tabs) + 'type : "map<string,object>",\n' + '\t'*(tabs) + 'data :\n' + '\t'*tabs + '{\n' 
+		tabs += 1
+		field += '\t'*(tabs)
+		parseType2 = ord(text[offset])
+		offset += 1
+		if parseType2 == 0x1: 
+			stringLength = bigOrd(text[offset:offset+4])
+			offset += 4
+			field += '"' + text[offset:offset+stringLength] + '" : \n' + '\t'*(tabs) + '{'
+			tabs += 1
+			offset += stringLength
+		inMap = 1
+		gettingClass = 1
+	elif parseType == 0x15:	#16 character hex value
+		if offset+16 > len(text):
+			print("aw poop something messed up")
+		field += '"'
+		for i in range(16):
+			if i in [4,6,8,10]:
+				field += '-'
+			field += "{0:0{1}x}".format(ord(text[offset+i]),2) #includes leading zeros
+		field += '"'
+		offset += 16
+	elif parseType == 0x16:	#color
+		field += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "color",\n' + '\t'*(tabs + 1) + 'data : ['
+		field += parseField(text, 6) + ', ' + parseField(text, 6) + ', ' + parseField(text, 6) + (', ' + str(parseField(text, 6)))*(bigOrd(text[offset-4:offset]) != 0x3f800000)
+		field += ']\n' + '\t'*tabs + '}'
+	elif parseType == 0x17:	#float array
+		field += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "float[]",\n' + '\t'*(tabs + 1) + 'data : ['
+		arrayLength = bigOrd(text[offset:offset+4])
+		offset += 4
+		field += ']\n' + '\t'*tabs + '}'
+		offset += arrayLength*4
+	elif parseType == 0x19: #package reference array
+		arrayLength = bigOrd(text[offset:offset+4])
+		offset += 4
+		field += '['
+		for i in range(arrayLength):
+			field += ord(text[offset+i]) + ', '
+		if arrayLength:
+			field = field[:-2]
+		field += ']'
+		offset += arrayLength
+	else:
+		print 'unknown type at ' + hex(offset-1) + ', ' + str(output.count('\n') + 1)
+	return field
+	
+def bigOrd(text):
+    output = 0
+    for i in range(len(text)):
+        #print(len(text)-i - 1)
+        output += (256**(len(text)-i - 1))*ord(text[i])
+    return output
+	 
 def coords(text):
 	output = ""
 	lastStart = 0
@@ -72,8 +230,8 @@ def classes(text):
 	return output[1:]
 
 def convert(text):
-	#output = text[:39] #BtWg header
-	#output += '1'
+	global offset, tabs, inMap, arrayLevels, output, gettingClass, stringMode
+	#output = text[:40] #BtWg header
 	output = 'BtWg00010001008d000016a00000000000000000'
 	output += '{\n\t'
 	gettingClass = 0
@@ -82,90 +240,46 @@ def convert(text):
 	currentSection = 0
 	tabs = 1
 	arrayLevels = []
+	inMap	= 0
 	firstField = 1
 	flag = 0
-	inMap = 0
-	for pick in range(len(text)):
-		#print hex(pick)
+	unClassable = 0
+	unFieldable = 0
+	stringMode = 0
+	for pick in range(len(text)): #should probably use a while loop instead so it doesnt have to iterate through ignored characters
 		if ignore:
 			ignore -= 1
-			#print 'i'
 		elif pick >= 40:
 			#print 'p'
 			if currentSection == 0:
-				if pick < len(text)-8:
-					#print(bigOrd(text[pick:pick+4]))
-					#print pick
-					if bigOrd(text[pick:pick+4]) == 0x4:
-						offset = 4 + pick
-						parse = bigOrd(text[offset:offset+4])
-						offset += 4
-						if offset+parse > len(text):
-							print("error 801: the parse code says to go further than the end of the file :/")
-						output += 'class : "' + text[offset:offset+parse] + '",\n'
-						offset += parse
-						output += '\t'*tabs + 'object_id : ' + str(objid) + ',\n'
-						output += '\t'*tabs + 'data :\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1)
-						objid += 1
-						tabs += 1
-						ignore += offset - pick - 1
-					elif bigOrd(text[pick:pick+4]) == 0x1:
-						offset = pick + 4
-						parseKey = bigOrd(text[offset:offset+4]) #length of the string
-						offset += 4
-						key = text[offset:offset+parseKey]
-						offset += parseKey
-						parse2Type = ord(text[offset])
-						offset += 1
-						value = ''
-						if parse2Type == 0x1: #8 bit int
-							val = ord(text[offset])
-							if val & 0x80:
-								val -= 0x100
-								neg = 1
-							value += str(val)
-							offset += 1
-						elif parse2Type == 5: #boolean
-							if offset+1 > len(text):
-								print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
-							if ord(text[offset]): #pick+8 + parse+4 +1 : pick+8 + parse+8 +1
-								value = 'true'
-							else:
-								value += 'false'
-							offset += 1
-						elif parse2Type == 3: #16 bit int
-							value += str(bigOrd(text[offset:offset + 4]))
-							offset += 4
-						elif parse2Type == 8: #string
-							if offset+4 > len(text):
-								print("error 802: the parse code says to go further than the end of the file :/")
-							parse2 = bigOrd(text[offset:offset+4]) #pick+8 + parse+1 : pick+8 + parse+4 +1
-							offset += 4
-							value = '"' + text[offset:offset+parse2] + '"' #pick+8 + parse+4 +1 : pick+8 + parse+4 +1 + parse2
-							offset += parse2
-						elif parse2Type == 21: #hex value
-							if pick+offset+16 > len(text):
-								print("aw poop")
-							value += '"'
-							for i in range(16):
-								if i in [4,6,8,10]:
-									value += '-'
-								value += "{0:0{1}x}".format(ord(text[offset+i]),2)
-							value += '"'
-							offset += 16
-						else:
-							print "missing type in section 0"
-						output += '"' + key + '" : ' + value + ',\n' + '\t'*tabs
-						ignore += offset - pick - 1
-						#if parse2Type == 21:
-						#	print pick + ignore
-					elif bigOrd(text[pick:pick+4]) == 0x0:
-						#print str(pick) + 'poop'
-						tabs -= 1
-						output = output[:(tabs + 3)*-1] + '\n' + '\t'*(tabs) + '}\n' + '}\n' + '{' #tabs add offset value might be wrong
-						ignore += 4
-						objid = 1
-						currentSection = 1
+				offset = pick
+				keyType = bigOrd(text[offset:offset+4])
+				offset += 4
+				#print hex(offset), str(keyType)
+				if keyType == 0x0: #end of array
+					tabs -= 1
+					output = output[:(tabs + 3)*-1] + '\n' + '\t'*(tabs) + '}\n' + '}\n' + '{' #tabs add offset value might be wrong
+					objid = 1
+					currentSection = 1
+				elif keyType == 0x1: #parameter
+					keyLength = bigOrd(text[offset:offset+4]) #length of the string
+					offset += 4
+					key = text[offset:offset+keyLength]
+					offset += keyLength
+					parseType = ord(text[offset])
+					offset += 1
+					field = parseField(text, parseType)
+					output += '"' + key + '" : ' + field + ',\n' + '\t'*tabs
+				elif keyType == 0x4: #object
+					stringLength = bigOrd(text[offset:offset+4])
+					offset += 4
+					output += 'class : "' + text[offset:offset+stringLength] + '",\n'
+					offset += stringLength
+					output += '\t'*tabs + 'object_id : ' + str(objid) + ',\n'
+					output += '\t'*tabs + 'data :\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1)
+					objid += 1
+					tabs += 1
+				ignore += offset - pick - 1
 			elif currentSection == 1:
 				#print ord(text[pick])
 				if ord(text[pick]) == 0x0a:
@@ -208,7 +322,7 @@ def convert(text):
 									if not classNum in [2050]:
 										print "missing class " + str(classNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
 									else:
-										print "pesky new class"
+										unClassable += 1
 								objid += 1
 								tabs += 1
 								firstField = 1
@@ -218,172 +332,46 @@ def convert(text):
 							offset = pick
 							fieldNum = bigOrd(text[offset:offset+4])
 							offset += 4
+							if firstField:
+								firstField = 0
+							else:
+								output += ','
+							field = ''
 							if fieldNum:
-								if not firstField:
-									output += ','
-								else:
-									firstField = 0
 								if fieldNum in params:
 									output += '\n' + '\t'*tabs + '"' + params[fieldNum] +  '(' + str(fieldNum) + ')" : '
 								else:
 									output += '\n' + '\t'*tabs + '"' + "missing_field" +  '(' + str(fieldNum) + ')" : '
 									if not fieldNum in [7489, 7490, 7243, 7235]:
-										#print tabs										
 										print "missing field " + str(fieldNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
 									else:
-										print "pesky new field"
+										unFieldable += 1
 								parseType = ord(text[offset])
 								offset += 1
-								if flag:
-									print 'flag ' + str(fieldNum) + ' - ' + hex(parseType) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
-									flag -= 1
-								if parseType == 0xa: #null
-									output += 'null'
-								elif parseType == 0x1: #8 bit int
-									val = ord(text[offset])
-									if val & 0x80:
-										val -= 0x100
-										neg = 1
-									output += str(val)
-									offset += 1
-								elif parseType == 0x2: #16 bit int
-									val = bigOrd(text[offset:offset + 2])
-									if val & 0x8000:
-										val -= 0x10000
-									output += str(val)
-									offset += 2
-								elif parseType == 0x3: #32 bit int
-									val = bigOrd(text[offset:offset + 4])
-									if val & 0x80000000:
-										val -= 0x100000000
-										neg = 1
-									output += str(val)
-									offset += 4
-								elif parseType == 0x5: #boolean
-									if offset + 1 > len(text):
-										print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
-									if ord(text[offset]): #pick+8 + parse+4 +1 : pick+8 + parse+8 +1
-										output += 'true'
-									else:
-										output += 'false'
-									offset += 1
-								elif parseType == 0x6: #float
-									flVal = struct.unpack('f', struct.pack('L', bigOrd(text[offset:offset + 4])))[0]
-									output += str(flVal)
-									offset += 4
-								elif parseType == 0x7: #double
-									dbVal = struct.unpack('d', struct.pack('Q', bigOrd(text[offset:offset + 8])))[0]
-									output += str(dbVal)
-									offset += 8
-								elif parseType == 0x8: #string
-									if offset + 1 > len(text):
-										print("error 802: the parse code says to go further than the end of the file :/")
-									stringLength = bigOrd(text[offset:offset+4]) #pick+8 + parse+1 : pick+8 + parse+4 +1
-									offset += 4
-									string = ''
-									sFormat = 0 #0:utf-8, 1:utf-16
-									if (stringLength & 0x80000000):
-										#print 'utf-16 string found'
-										stringLength &= 0x7fffffff
-										sFormat = 1
-									#if (stringLength > 10000): #was making some code blocks not convert lol, hopefully i dont need this failsafe anymore
-									#	print str(stringLength) + ' string is waaaaay too long' + hex(pick) + ', ' + str(output.count('\n') + 1)
-									else:
-										if sFormat: #utf-16
-											for i in range(stringLength):
-												if ord(text[offset+i*2]): #if the first character is anything other than 0x00
-													string += '\u' + hex(bigOrd(text[offset+i*2:offset+i*2+2]))
-												else:
-													if text[offset+i*2 + 1] == '\n':
-														string += '\\n'
-													else:
-														string += text[offset+i*2 + 1]
-										else: #utf-8
-											for i in range(stringLength):
-												if text[offset+i] == '\n':
-													string += '\\n'
-												else:
-													string += text[offset+i]
-									output += '"' + string + '"' #pick+8 + parse+4 +1 : pick+8 + parse+4 +1 + parse2
-									offset += stringLength*(sFormat + 1)
-								elif parseType == 0x9: #object
-									output += '\n' + '\t'*tabs + '{ '
-									tabs += 1
-									gettingClass = 1
-								elif parseType == 0xb: #object reference
-									output += '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' }'
-									offset += 4
-								elif parseType == 0x12: #object array
-									arrayLevels.append(tabs)
-									output += '\n' + '\t'*tabs + '[\n' + '\t'*(tabs + 1) + '{ '
-									tabs += 2
-									gettingClass = 1
-								elif parseType == 0x14: #map string to object
-									output += '\n' + '\t'*tabs + '{\n'
-									tabs += 1
-									output += '\t'*(tabs) + 'type : "map<string,object>",\n' + '\t'*(tabs) + 'data :\n' + '\t'*tabs + '{\n' 
-									tabs += 1
-									output += '\t'*(tabs)
-									parseType2 = ord(text[offset])
-									offset += 1
-									if parseType2 == 0x1: 
-										stringLength = bigOrd(text[offset:offset+4])
-										offset += 4
-										output += '"' + text[offset:offset+stringLength] + '" : \n' + '\t'*(tabs) + '{'
-										tabs += 1
-										offset += stringLength
-									inMap = 2
-									gettingClass = 1
-								elif parseType == 0x15: #hex value
-									if offset+16 > len(text):
-										print("aw poop")
-									output += '"'
-									for i in range(16):
-										if i in [4,6,8,10]:
-											output += '-'
-										#print "{0:0{1}x}".format(ord(text[offset+i]),2)
-										output += "{0:0{1}x}".format(ord(text[offset+i]),2)
-									output += '"'
-									offset += 16
-								elif parseType == 0x16: #color
-									output += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "color",\n' + '\t'*(tabs + 1) + 'data : [0.5, 0.5, 0.5]\n' + '\t'*tabs + '}'
-									offset += 16
-								elif parseType == 0x17: #float array
-									output += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "float[]",\n' + '\t'*(tabs + 1) + 'data : ['
-									arrayLength = bigOrd(text[offset:offset+4]) #pick+8 + parse+1 : pick+8 + parse+4 +1
-									offset += 4
-									output += ']\n' + '\t'*tabs + '}'
-									offset += arrayLength*4
-								else:
-									print 'unknown type at ' + hex(offset-1) + ', ' + str(output.count('\n') + 1)
 								if inMap == 1:
 									offset += 1
 									inMap = 0
 									tabs -= 1
-									output += '\n' + '\t'*tabs + '}' + '\n'
+									field += '\n' + '\t'*tabs + '}' + '\n'
 									tabs -= 1
-									output += '\t'*(tabs) + '}'
-								elif inMap == 2:
-									inMap = 1
+									field += '\t'*(tabs) + '}'
+								field += parseField(text, parseType, stringMode)
 								ignore += offset - pick - 1
-								if parseType == 0x16:
-									pass
-									#print ignore + pick
 							else:
 								tabs -= 1
-								output += '\n' + '\t'*tabs + '}' + '\n'
+								field += '\n' + '\t'*tabs + '}' + '\n'
 								tabs -= 1
-								output += '\t'*(tabs) + '}'
-								if flag:
-									print 'flag2 - ' + str(tabs - 1 in arrayLevels) + ': ' + hex(pick) + ', ' + str(output.count('\n') + 1)
-									flag -= 1
+								field += '\t'*(tabs) + '}'
 								if tabs - 1 in arrayLevels:
-									output += ',\n' + '\t'*tabs + '{ '
+									field += ',\n' + '\t'*tabs + '{ '
 									tabs += 1
 									gettingClass = 1
-								#print 'blank ' + hex(offset) + ', ' + str(offset - pick)
 								ignore += offset - pick - 1
-								#print ignore + pick
+							output += field
+	'''if unClassable or unFieldable:
+		#print "holy moly there are " + (unClassable != 0)*(str(unClassable) + " unknown classes") + (unClassable != 0 and unFieldable != 0)*" and " + (unFieldable != 0)*(str(unFieldable) + " unknown fields") + " in this file"
+	else:
+		print "everything probably worked ok. to be honest, i'm not sure."'''
 	return output
 
 algos = {0:coords,
@@ -392,13 +380,19 @@ algos = {0:coords,
 			3:convert
 }
 
-def magic(name, directory):
+def magic(name, directory): #applies an algorithm to a single file (which algorithm it is is based on the 'mode' variable)
 	with open(directory + '\\' + name, 'rb') as f:
 		device_data = f.read()
 		output = ""
-		output = algos[mode](device_data)
-		with open(directory + '\output\edited' + name, 'wb') as text_file:
+		if mode == 3:
+			if device_data[41] == chr(0x0): #not sure how to implement this yet
+				output = algos[mode](device_data)
+			elif device_data[41] == '{':
+				print "this file is either already converted or isn't an unreadable file"
+		with open(directory + '\output\\converted ' + name, 'wb') as text_file:
 			text_file.write(output)
 
-magic('Amp.bwdevice', '.\devices\old devices')
-print('decoder imported')
+#these function calls are for test purposes
+#magic('test.bwproject', '.\devices\old devices')
+#magic('Amp.bwdevice', '.\devices\old devices')
+#print('decoder imported')
