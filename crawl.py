@@ -15,9 +15,7 @@ inputDir = '.' + inputDir
 if not os.path.exists('output'):
 	os.makedir('output')
 for file in os.listdir(inputDir):
-	if file.endswith(".bwdevice"):
-		#print directory
-		#if file == 'Amp.bwdevice':
+	if file.endswith(".bwdevice") or file.endswith(".bwproject") or file.endswith(".bwmodulator"):
 		print '-'+file
 		magic(file, inputDir)
 print "All done. Let me know if you had any issues using this or have suggestions for improving it."
