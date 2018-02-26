@@ -5,9 +5,11 @@ collate.py is just there for decoration.
 
 ## Changelogs  
 
-Changelog v0.4
--Upgraded to Python 3.6
--Added support for more filetypes (basically already worked, just had to whitelist their names)
+Changelog v0.4:  
+-Upgraded to Python 3.6  
+-Added support for more filetypes (basically already worked, just had to whitelist their names)  
+
+The upgrade to 3.6 was a little funky, but I think I got it all figured out.
 
 Changelog v0.3:  
 -Improved interface (less minimal, but easier to use in my opinion)  
