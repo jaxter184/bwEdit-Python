@@ -1,5 +1,5 @@
 import struct
-from tables import *
+from src.tables import *
 
 mode = 3
 ##:func name,	#description (allowed filetypes)
@@ -12,20 +12,20 @@ def parseField(text, parseType, stringType = 0):
 	global offset, tabs, inMap, arrayLevels, output, gettingClass, stringMode #ugh so many global variables
 	field = '' #output string
 	if parseType == 0x01:		#8 bit int
-		val = ord(text[offset])
+		val = (text[offset])
 		if val & 0x80:
 			val -= 0x100
 			neg = 1
 		field += str(val)
 		offset += 1
 	elif parseType == 0x02:	#16 bit int
-		val = bigOrd(text[offset:offset + 2])
+		val = intConv(text[offset:offset + 2])
 		if val & 0x8000:
 			val -= 0x10000
 		field += str(val)
 		offset += 2
 	elif parseType == 0x03:	#32 bit int
-		val = bigOrd(text[offset:offset + 4])
+		val = intConv(text[offset:offset + 4])
 		if val & 0x80000000:
 			val -= 0x100000000
 			neg = 1
@@ -34,24 +34,24 @@ def parseField(text, parseType, stringType = 0):
 	elif parseType == 0x05:	#boolean
 		if offset + 1 > len(text):
 			print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
-		if ord(text[offset]):
+		if (text[offset]):
 			field += 'true'
 		else:
 			field += 'false'
 		offset += 1
 	elif parseType == 0x06:	#float
-		flVal = struct.unpack('f', struct.pack('L', bigOrd(text[offset:offset + 4])))[0]
+		flVal = struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0]
 		field += str(flVal)
 		offset += 4
 	elif parseType == 0x07:	#double
-		dbVal = struct.unpack('d', struct.pack('Q', bigOrd(text[offset:offset + 8])))[0]
+		dbVal = struct.unpack('d', struct.pack('Q', intConv(text[offset:offset + 8])))[0]
 		field += str(dbVal)
 		offset += 8
 	elif parseType == 0x08:	#string
 		if stringType == 0:
 			if offset + 1 > len(text):
 				print("error 802: the parse code says to go further than the end of the file :/")
-			stringLength = bigOrd(text[offset:offset+4])
+			stringLength = intConv(text[offset:offset+4])
 			offset += 4
 			string = ''
 			sFormat = 0 #0:utf-8, 1:utf-16
@@ -61,25 +61,25 @@ def parseField(text, parseType, stringType = 0):
 			else:
 				if sFormat: #utf-16
 					for i in range(stringLength):
-						if ord(text[offset+i*2]): #if the first character is anything other than 0x00
-							string += '\u' + hex(bigOrd(text[offset+i*2:offset+i*2+2]))
+						if (text[offset+i*2]): #if the first character is anything other than 0x00
+							string += ('\\u' + hex(intConv(text[offset+i*2:offset+i*2+2])))
 						else:
 							if text[offset+i*2 + 1] == '\n':
 								string += '\\n'
 							else:
-								string += text[offset+i*2 + 1]
+								string += chr(text[offset+i*2 + 1])
 				else: #utf-8
 					for i in range(stringLength):
-						if text[offset+i] == '\n':
+						if chr(text[offset+i]) == '\n':
 							string += '\\n'
 						else:
-							string += text[offset+i]
+							string += chr(text[offset+i])
 			field += '"' + string + '"'
 			offset += stringLength*(sFormat + 1)
 		elif stringType == 1:
 			field += '"'
-			while ord(text[offset]) != 0x00:
-				field += text[offset]
+			while (text[offset]) != 0x00:
+				field += chr(text[offset])
 				offset += 1
 			offset += 1
 			field += '"'
@@ -90,20 +90,18 @@ def parseField(text, parseType, stringType = 0):
 	elif parseType == 0x0a:	#null
 		field += 'null'
 	elif parseType == 0x0b:	#object reference
-		field += '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' }'
+		field += '{ object_ref : ' + str(intConv(text[offset:offset+4])) + ' }'
 		offset += 4
 	elif parseType == 0x0d: #nested header
-		field += '(' + str(bigOrd(text[offset:offset+4])) + ')'
+		headerLength = intConv(text[offset:offset+4])
 		offset += 4
-		field += text[offset:offset+40]
-		offset += 40
-		stringLength = bigOrd(text[offset:offset+4])
-		offset += 4
-		field += '"' + text[offset:offset+stringLength] + '" & placeholder'
-		offset += stringLength
-		offset += 1
-		tabs += 1
-		stringMode = 1
+		field += '"'
+		print(headerLength)
+		while(headerLength > 0):
+			field += chr(text[offset])
+			offset+=1
+			headerLength-=1
+		field += '"'
 	elif parseType == 0x12:	#object array
 		arrayLevels.append(tabs)
 		field += '\n' + '\t'*tabs + '[\n' + '\t'*(tabs + 1) + '{ '
@@ -115,12 +113,12 @@ def parseField(text, parseType, stringType = 0):
 		field += '\t'*(tabs) + 'type : "map<string,object>",\n' + '\t'*(tabs) + 'data :\n' + '\t'*tabs + '{\n' 
 		tabs += 1
 		field += '\t'*(tabs)
-		parseType2 = ord(text[offset])
+		parseType2 = (text[offset])
 		offset += 1
 		if parseType2 == 0x1: 
-			stringLength = bigOrd(text[offset:offset+4])
+			stringLength = intConv(text[offset:offset+4])
 			offset += 4
-			field += '"' + text[offset:offset+stringLength] + '" : \n' + '\t'*(tabs) + '{'
+			field += '"' + bigChr(text[offset:offset+stringLength]) + '" : \n' + '\t'*(tabs) + '{'
 			tabs += 1
 			offset += stringLength
 		inMap = 1
@@ -132,38 +130,52 @@ def parseField(text, parseType, stringType = 0):
 		for i in range(16):
 			if i in [4,6,8,10]:
 				field += '-'
-			field += "{0:0{1}x}".format(ord(text[offset+i]),2) #includes leading zeros
+			field += "{0:0{1}x}".format((text[offset+i]),2) #includes leading zeros
 		field += '"'
 		offset += 16
 	elif parseType == 0x16:	#color
 		field += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "color",\n' + '\t'*(tabs + 1) + 'data : ['
-		field += parseField(text, 6) + ', ' + parseField(text, 6) + ', ' + parseField(text, 6) + (', ' + str(parseField(text, 6)))*(bigOrd(text[offset-4:offset]) != 0x3f800000)
+		field += parseField(text, 6) + ', ' + parseField(text, 6) + ', ' + parseField(text, 6) + (', ' + str(parseField(text, 6)))*(intConv(text[offset-4:offset]) != 0x3f800000)
 		field += ']\n' + '\t'*tabs + '}'
 	elif parseType == 0x17:	#float array
 		field += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "float[]",\n' + '\t'*(tabs + 1) + 'data : ['
-		arrayLength = bigOrd(text[offset:offset+4])
+		arrayLength = intConv(text[offset:offset+4])
 		offset += 4
 		field += ']\n' + '\t'*tabs + '}'
 		offset += arrayLength*4
 	elif parseType == 0x19: #package reference array
-		arrayLength = bigOrd(text[offset:offset+4])
+		arrayLength = intConv(text[offset:offset+4])
 		offset += 4
 		field += '['
 		for i in range(arrayLength):
-			field += ord(text[offset+i]) + ', '
+			field += (chr(text[offset+i])) + ', '
 		if arrayLength:
 			field = field[:-2]
 		field += ']'
 		offset += arrayLength
 	else:
-		print 'unknown type at ' + hex(offset-1) + ', ' + str(output.count('\n') + 1)
+		print('unknown type at ' + hex(offset-1) + ', ' + str(output.count('\n') + 1))
 	return field
-	
+
 def bigOrd(text):
     output = 0
     for i in range(len(text)):
         #print(len(text)-i - 1)
-        output += (256**(len(text)-i - 1))*ord(text[i])
+        output += (256**(len(text)-i - 1))*(text[i])
+    return output
+
+def bigChr(chain):
+    output = ''
+    for i in range(len(chain)):
+        #print(len(text)-i - 1)
+        output += chr(chain[i])
+    return output
+	 
+def intConv(chain):
+    output = 0
+    for i in range(len(chain)):
+        #print(len(chain)-i - 1)
+        output += (256**(len(chain)-i - 1))*chain[i]
     return output
 	 
 def coords(text):
@@ -172,39 +184,39 @@ def coords(text):
 	isX = 0
 	findComma = 0
 	for pick in range(14, len(text)):
-		if text[pick - 10:pick] == '\"x(17)\" : ':
+		if bigChr(text[pick - 10:pick]) == '\"x(17)\" : ':
 			lastStart = pick
 			isX = 1
 			findComma = 1
-		if text[pick - 10:pick] == '\"y(18)\" : ':
+		if bigChr(text[pick - 10:pick]) == '\"y(18)\" : ':
 			lastStart = pick
 			isX = 0
 			findComma = 1
-		if text[pick - 14:pick] == '\"name(374)\" : ':
+		if bigChr(text[pick - 14:pick]) == '\"name(374)\" : ':
 			lastStart = pick
 			isX = 0
 			findComma = 1
-		if findComma and (text[pick] == ','):
+		if bigChr(findComma and (text[pick]) == ','):
 			if isX:
 				 output += '\n'
 			else:
 				 output += ','
 			findComma = 0
-			output += text[lastStart:pick]
+			output += bigChr(text[lastStart:pick])
 	return output[1:]
 	 
 def settings(text):
 	output = ""
 	for pick in range(len(text)-5):
-		if text[pick:pick + 5] == ')\" : ':
+		if bigChr(text[pick:pick + 5]) == ')\" : ':
 			preIndex = 0
-			while text[pick - preIndex] != '(':
+			while bigChr(text[pick - preIndex]) != '(':
 				 preIndex += 1
-			number = text[pick-preIndex + 1:pick]
+			number = bigChr(text[pick-preIndex + 1:pick])
 			pIndexNum = preIndex
-			while text[pick - preIndex] != '\"':
+			while chr(text[pick - preIndex]) != '\"':
 				 preIndex += 1
-			parameter = text[pick-preIndex + 1:pick-pIndexNum]
+			parameter = bigChr(text[pick-preIndex + 1:pick-pIndexNum])
 			output += '\n' + number + ',' + parameter
 	return output[1:]
 
@@ -250,30 +262,30 @@ def convert(text):
 		if ignore:
 			ignore -= 1
 		elif pick >= 40:
-			#print 'p'
+			#print('p')
 			if currentSection == 0:
 				offset = pick
-				keyType = bigOrd(text[offset:offset+4])
+				keyType = intConv(text[offset:offset+4])
 				offset += 4
-				#print hex(offset), str(keyType)
+				#print(hex(offset), str(keyType))
 				if keyType == 0x0: #end of array
 					tabs -= 1
 					output = output[:(tabs + 3)*-1] + '\n' + '\t'*(tabs) + '}\n' + '}\n' + '{' #tabs add offset value might be wrong
 					objid = 1
 					currentSection = 1
 				elif keyType == 0x1: #parameter
-					keyLength = bigOrd(text[offset:offset+4]) #length of the string
+					keyLength = intConv(text[offset:offset+4]) #length of the string
 					offset += 4
-					key = text[offset:offset+keyLength]
+					key = bigChr(text[offset:offset+keyLength])
 					offset += keyLength
-					parseType = ord(text[offset])
+					parseType = (text[offset])
 					offset += 1
 					field = parseField(text, parseType)
 					output += '"' + key + '" : ' + field + ',\n' + '\t'*tabs
 				elif keyType == 0x4: #object
-					stringLength = bigOrd(text[offset:offset+4])
+					stringLength = intConv(text[offset:offset+4])
 					offset += 4
-					output += 'class : "' + text[offset:offset+stringLength] + '",\n'
+					output += 'class : "' + bigChr(text[offset:offset+stringLength]) + '",\n'
 					offset += stringLength
 					output += '\t'*tabs + 'object_id : ' + str(objid) + ',\n'
 					output += '\t'*tabs + 'data :\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1)
@@ -281,19 +293,19 @@ def convert(text):
 					tabs += 1
 				ignore += offset - pick - 1
 			elif currentSection == 1:
-				#print ord(text[pick])
-				if ord(text[pick]) == 0x0a:
+				#print((text[pick]))
+				if (text[pick]) == 0x0a:
 					currentSection = 2
 					gettingClass = 1
 			elif currentSection == 2:
 				if tabs > 0: #for safety
-					#print hex(pick) + ', ' + str(output.count('\n'))
+					#print(hex(pick) + ', ' + str(output.count('\n')))
 					if pick < len(text):
-						#print(bigOrd(text[pick:pick+4]))
-						#print pick
+						#print(intConv(text[pick:pick+4]))
+						#print(pick)
 						if gettingClass:
 							offset = pick
-							classNum = bigOrd(text[offset:offset+4])
+							classNum = intConv(text[offset:offset+4])
 							offset += 4
 							if classNum == 0x3: #end of array
 								#print tabs
@@ -310,7 +322,7 @@ def convert(text):
 									output = output[:-1]
 								if output[-2:] == '[\n': #im pretty sure there's a nicer way to do this
 									output += '\t'*(tabs-1)
-								output += '{ object_ref : ' + str(bigOrd(text[offset:offset+4])) + ' },\n' + '\t'*(tabs-1) + '{ '
+								output += '{ object_ref : ' + str(intConv(text[offset:offset+4])) + ' },\n' + '\t'*(tabs-1) + '{ '
 								offset += 4
 							else:
 								if classNum in objs:
@@ -319,10 +331,9 @@ def convert(text):
 									output += '\n' + '\t'*tabs + 'class : "' + objs[classNum] + '(' + str(classNum) + ')",\n' + '\t'*tabs + 'object_id : ' + str(objid) + ',\n' + '\t'*tabs + 'data :\n' + '\t'*tabs + '{'
 								else:
 									output = output[:-1] + '\n' + '\t'*tabs + 'class : "' + "missing_class" + '(' + str(classNum) + ')",\n' + '\t'*tabs + 'object_id : ' + str(objid) + ',\n' + '\t'*tabs + 'data :\n' + '\t'*tabs + '{'
-									if not classNum in [2050]:
-										print "missing class " + str(classNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
-									else:
-										unClassable += 1
+									unClassable += 1
+									'''if not classNum in [2050]:
+										print("missing class " + str(classNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1))'''
 								objid += 1
 								tabs += 1
 								firstField = 1
@@ -330,7 +341,7 @@ def convert(text):
 							ignore += offset - pick - 1
 						else:
 							offset = pick
-							fieldNum = bigOrd(text[offset:offset+4])
+							fieldNum = intConv(text[offset:offset+4])
 							offset += 4
 							if firstField:
 								firstField = 0
@@ -342,11 +353,10 @@ def convert(text):
 									output += '\n' + '\t'*tabs + '"' + params[fieldNum] +  '(' + str(fieldNum) + ')" : '
 								else:
 									output += '\n' + '\t'*tabs + '"' + "missing_field" +  '(' + str(fieldNum) + ')" : '
-									if not fieldNum in [7489, 7490, 7243, 7235]:
-										print "missing field " + str(fieldNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1)
-									else:
-										unFieldable += 1
-								parseType = ord(text[offset])
+									unFieldable += 1
+									'''if not fieldNum in [7489, 7490, 7243, 7235]:
+										print("missing field " + str(fieldNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1))'''
+								parseType = text[offset]
 								offset += 1
 								if inMap == 1:
 									offset += 1
@@ -368,10 +378,10 @@ def convert(text):
 									gettingClass = 1
 								ignore += offset - pick - 1
 							output += field
-	'''if unClassable or unFieldable:
-		#print "holy moly there are " + (unClassable != 0)*(str(unClassable) + " unknown classes") + (unClassable != 0 and unFieldable != 0)*" and " + (unFieldable != 0)*(str(unFieldable) + " unknown fields") + " in this file"
+	if unClassable or unFieldable:
+		print("there are " + (unClassable != 0)*(str(unClassable) + " unknown classes") + (unClassable != 0 and unFieldable != 0)*" and " + (unFieldable != 0)*(str(unFieldable) + " unknown fields") + " in this file")
 	else:
-		print "everything probably worked ok. to be honest, i'm not sure."'''
+		print("everything probably worked ok. to be honest, i'm not sure.")
 	return output
 
 algos = {0:coords,
@@ -385,12 +395,12 @@ def magic(name, directory): #applies an algorithm to a single file (which algori
 		device_data = f.read()
 		output = ""
 		if mode == 3:
-			if device_data[41] == chr(0x0): #not sure how to implement this yet
+			if device_data[42] == 0: #not sure how to implement this yet
 				output = algos[mode](device_data)
-			elif device_data[41] == '{':
-				print "this file is either already converted or isn't an unreadable file"
+			elif device_data[42] == '{':
+				print("this file is either already converted or isn't an unreadable file")
 		with open(directory + '\output\\converted ' + name, 'wb') as text_file:
-			text_file.write(output)
+			text_file.write(output.encode("utf-8"))
 
 #these function calls are for test purposes
 #magic('test.bwproject', '.\devices\old devices')

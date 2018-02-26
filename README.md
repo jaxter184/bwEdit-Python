@@ -1,9 +1,13 @@
 # bwConvert
 Python script for making .bwdevice files readable  
-To use, just put some .bwdevices or .bwmodulators somewhere in the folder and run the crawl.py script.  
+To use, just put some Bitwig files (.bwmodulator, .bwdevice, .bwclip, .bwpreset) somewhere in the folder and run the crawl.py script.  
 collate.py is just there for decoration.
 
 ## Changelogs  
+
+Changelog v0.4
+-Upgraded to Python 3.6
+-Added support for more filetypes (basically already worked, just had to whitelist their names)
 
 Changelog v0.3:  
 -Improved interface (less minimal, but easier to use in my opinion)  
