@@ -1,56 +1,78 @@
 import struct
-from src.tables import *
+from collections import OrderedDict
+from src import tables
+from src.lib import fs
+from src.lib import util
+from src.lib import atoms
 
 mode = 3
 ##:func name,	#description (allowed filetypes)
 #0:coords,		#collects the coordinates of modules in the desktop modular environment (plaintext)
 #1:settings,	#collects all field numbers used and their respective names (plaintext)
 #2:classes, 	#collects all class numbers used and their respective names (plaintext)
-#3:convert		#converts files from unreadable to plaintext .bwdevice and .bwmodulator files (unreadable)
+#3:objectify	#converts files from unreadable to plaintext .bwdevice and .bwmodulator files (unreadable)
 
-def parseField(text, parseType, stringType = 0):
-	global offset, tabs, inMap, arrayLevels, output, gettingClass, stringMode #ugh so many global variables
+types = {1:'int8',
+			2:'int16',
+			3:'int32',
+			4:'unknown',
+			5:'bool',
+			6:'float',
+			7:'double',
+			8:'string',
+			9:'object',
+		0x0a:'null',
+		0x0d:'nested header',
+		0x12:'obj array',
+		0x14:'map',
+		0x15:'hex16',
+		0x16:'color',
+		0x17:'float array',
+		0x19:'package ref array'
+}
+
+def parseField(text, stringType = 0):
+	global offset, inMap, output, stringMode, objList, objHeir, tempObjList #ugh so many global variables
+	parseType = text[offset]
+	offset += 1
+	'''if parseType in types:
+		print (types[parseType])
+	else:
+		print (hex(parseType))'''
 	field = '' #output string
 	if parseType == 0x01:		#8 bit int
 		val = (text[offset])
 		if val & 0x80:
 			val -= 0x100
 			neg = 1
-		field += str(val)
 		offset += 1
+		return val
 	elif parseType == 0x02:	#16 bit int
 		val = intConv(text[offset:offset + 2])
 		if val & 0x8000:
 			val -= 0x10000
-		field += str(val)
 		offset += 2
+		return val
 	elif parseType == 0x03:	#32 bit int
 		val = intConv(text[offset:offset + 4])
 		if val & 0x80000000:
 			val -= 0x100000000
 			neg = 1
-		field += str(val)
 		offset += 4
+		return val
 	elif parseType == 0x05:	#boolean
-		if offset + 1 > len(text):
-			print("error 502: how did you get here, this should only happen if there is a boolean field at the end of the file")
-		if (text[offset]):
-			field += 'true'
-		else:
-			field += 'false'
 		offset += 1
+		return bool(text[offset])
 	elif parseType == 0x06:	#float
 		flVal = struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0]
-		field += str(flVal)
 		offset += 4
+		return flVal
 	elif parseType == 0x07:	#double
 		dbVal = struct.unpack('d', struct.pack('Q', intConv(text[offset:offset + 8])))[0]
-		field += str(dbVal)
 		offset += 8
+		return dbVal
 	elif parseType == 0x08:	#string
 		if stringType == 0:
-			if offset + 1 > len(text):
-				print("error 802: the parse code says to go further than the end of the file :/")
 			stringLength = intConv(text[offset:offset+4])
 			offset += 4
 			string = ''
@@ -58,6 +80,9 @@ def parseField(text, parseType, stringType = 0):
 			if (stringLength & 0x80000000):
 				stringLength &= 0x7fffffff
 				sFormat = 1
+			if (stringLength > 100000):
+				offset += 4
+				return 'too long'
 			else:
 				if sFormat: #utf-16
 					for i in range(stringLength):
@@ -74,24 +99,24 @@ def parseField(text, parseType, stringType = 0):
 							string += '\\n'
 						else:
 							string += chr(text[offset+i])
-			field += '"' + string + '"'
 			offset += stringLength*(sFormat + 1)
+			return string
 		elif stringType == 1:
-			field += '"'
 			while (text[offset]) != 0x00:
 				field += chr(text[offset])
 				offset += 1
 			offset += 1
-			field += '"'
+			return field
 	elif parseType == 0x09:	#object
-		field += '\n' + '\t'*tabs + '{ '
-		tabs += 1
-		gettingClass = 1
+		return getClass(text)
 	elif parseType == 0x0a:	#null
-		field += 'null'
+		return None
 	elif parseType == 0x0b:	#object reference
-		field += '{ object_ref : ' + str(intConv(text[offset:offset+4])) + ' }'
+		objNum = intConv(text[offset:offset+4])
 		offset += 4
+		out = atoms.Reference(objNum)
+		#objList.append(out)
+		return out
 	elif parseType == 0x0d: #nested header
 		headerLength = intConv(text[offset:offset+4])
 		offset += 4
@@ -102,47 +127,50 @@ def parseField(text, parseType, stringType = 0):
 			offset+=1
 			headerLength-=1
 		field += '"'
+		return field
 	elif parseType == 0x12:	#object array
-		arrayLevels.append(tabs)
-		field += '\n' + '\t'*tabs + '[\n' + '\t'*(tabs + 1) + '{ '
-		tabs += 2
-		gettingClass = 1
+		tempList = []
+		while (intConv(text[offset:offset+4]) != 0x3):
+			tempList.append(getClass(text))
+		#print (tempList)
+		offset += 4
+		return tempList
 	elif parseType == 0x14:	#map string to object
-		field += '\n' + '\t'*tabs + '{\n'
-		tabs += 1
-		field += '\t'*(tabs) + 'type : "map<string,object>",\n' + '\t'*(tabs) + 'data :\n' + '\t'*tabs + '{\n' 
-		tabs += 1
-		field += '\t'*(tabs)
+		field += 'type : "map<string,object>",\n' + 'data :\n' + '{\n' 
 		parseType2 = (text[offset])
 		offset += 1
+		return field
 		if parseType2 == 0x1: 
 			stringLength = intConv(text[offset:offset+4])
 			offset += 4
-			field += '"' + bigChr(text[offset:offset+stringLength]) + '" : \n' + '\t'*(tabs) + '{'
-			tabs += 1
+			field += bigChr(text[offset:offset+stringLength])
 			offset += stringLength
 		inMap = 1
-		gettingClass = 1
+		getClass(text)
+		return field
 	elif parseType == 0x15:	#16 character hex value
-		if offset+16 > len(text):
-			print("aw poop something messed up")
-		field += '"'
 		for i in range(16):
 			if i in [4,6,8,10]:
 				field += '-'
 			field += "{0:0{1}x}".format((text[offset+i]),2) #includes leading zeros
-		field += '"'
 		offset += 16
+		return field
 	elif parseType == 0x16:	#color
-		field += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "color",\n' + '\t'*(tabs + 1) + 'data : ['
-		field += parseField(text, 6) + ', ' + parseField(text, 6) + ', ' + parseField(text, 6) + (', ' + str(parseField(text, 6)))*(intConv(text[offset-4:offset]) != 0x3f800000)
-		field += ']\n' + '\t'*tabs + '}'
+		flVals = []
+		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
+		offset += 4
+		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
+		offset += 4
+		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
+		offset += 4
+		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
+		offset += 4
+		return atoms.Color(flVals[0],flVals[1],flVals[2],flVals[3])
 	elif parseType == 0x17:	#float array
-		field += '\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1) + 'type : "float[]",\n' + '\t'*(tabs + 1) + 'data : ['
 		arrayLength = intConv(text[offset:offset+4])
 		offset += 4
-		field += ']\n' + '\t'*tabs + '}'
 		offset += arrayLength*4
+		return field
 	elif parseType == 0x19: #package reference array
 		arrayLength = intConv(text[offset:offset+4])
 		offset += 4
@@ -153,9 +181,10 @@ def parseField(text, parseType, stringType = 0):
 			field = field[:-2]
 		field += ']'
 		offset += arrayLength
+		return field
 	else:
-		print('unknown type at ' + hex(offset-1) + ', ' + str(output.count('\n') + 1))
-	return field
+		print('unknown type at ' + hex(offset-1) + ', ' + str(parseType))
+		return ''
 
 def bigOrd(text):
     output = 0
@@ -241,166 +270,138 @@ def classes(text):
 				#print(parameter)
 	return output[1:]
 
-def convert(text):
-	global offset, tabs, inMap, arrayLevels, output, gettingClass, stringMode
+def getClass(text):
+	global offset, inMap, output, stringMode, objList, objHeir, tempObjList, unClassable, unFieldable
+	#print("pos: " + hex(offset))
+	classNum = intConv(text[offset:offset+4])
+	offset += 4
+	if classNum == 0x1: #object references
+		objNum = intConv(text[offset:offset+4])
+		offset += 4
+		return atoms.Reference(objNum)
+	else:
+		objName = ''
+		if classNum in tables.objs:
+			objName = tables.objs[classNum] + '(' + str(classNum) + ')'
+		else:
+			objName = "missing_class" + '(' + str(classNum) + ')'
+			unClassable += 1
+		object = atoms.Atom(objName)
+		fieldNum = intConv(text[offset:offset+4])
+		offset += 4
+		#print (fieldNum)
+		while (fieldNum):
+			#print("field: " + hex(offset-4))
+			fieldName = ''
+			if fieldNum in tables.params:
+				fieldName = tables.params[fieldNum] +  '(' + str(fieldNum) + ')'
+			else:
+				fieldName = "missing_field" +  '(' + str(fieldNum) + ')'
+				unFieldable += 1
+			'''if inMap == 1: #redo this
+				offset += 1
+				inMap = 0'''
+			value = parseField(text)
+			object.add_field(fieldName, value)
+			fieldNum = intConv(text[offset:offset+4])
+			offset += 4
+		#print ("broke out of object")
+		#objHeir = objHeir[:-1]
+		#tempObjList.append(outObj)
+		#objHeir.append(len(objList))
+		#objList.append(object)
+		return object
+
+replaceList = ['class', 'object_id', 'data', 'type', 'object_ref']
+
+def reformat(input):
+	output = input
+	for replaceThese in replaceList:
+		output = output.replace('"' + replaceThese + '":', replaceThese + ' :')
+	output = output.replace('  ', '\t')
+	output = output.replace('}{', '}\n{')
+	return output
+		
+def objectify(text):
+	global offset, inMap, output, stringMode, objList, objHeir, tempObjList, unClassable, unFieldable
 	#output = text[:40] #BtWg header
-	output = 'BtWg00010001008d000016a00000000000000000'
-	output += '{\n\t'
-	gettingClass = 0
-	ignore = 0
-	objid = 1
+	header = 'BtWg00010001008d000016a00000000000000000'
+	#output += '{\n\t'
 	currentSection = 0
-	tabs = 1
-	arrayLevels = []
+	#objHeir = [] #will hold the current heirarchy of objects (integer values)
+	output = [] #the array of objects that will be output
+	objList = [] #for making references
+	tempObjList = []
 	inMap	= 0
-	firstField = 1
-	flag = 0
 	unClassable = 0
 	unFieldable = 0
 	stringMode = 0
-	for pick in range(len(text)): #should probably use a while loop instead so it doesnt have to iterate through ignored characters
-		if ignore:
-			ignore -= 1
-		elif pick >= 40:
-			#print('p')
-			if currentSection == 0:
-				offset = pick
-				keyType = intConv(text[offset:offset+4])
+	firstClass = 0
+	textLength = len(text)
+	offset = 40
+	while offset < textLength:#textLength: #should probably use a while loop instead so it doesnt have to iterate through ignored characters
+		#print('p')
+		if currentSection == 0: #getting the header info
+			keyType = intConv(text[offset:offset+4])
+			offset += 4
+			if keyType == 0x0: #end of array
+				#objHeir = objHeir[:-1]
+				output.append(objList[0])
+				objid = 1
+				currentSection = 1
+			elif keyType == 0x1: #parameter
+				keyLength = intConv(text[offset:offset+4]) #length of the string
 				offset += 4
-				#print(hex(offset), str(keyType))
-				if keyType == 0x0: #end of array
-					tabs -= 1
-					output = output[:(tabs + 3)*-1] + '\n' + '\t'*(tabs) + '}\n' + '}\n' + '{' #tabs add offset value might be wrong
-					objid = 1
-					currentSection = 1
-				elif keyType == 0x1: #parameter
-					keyLength = intConv(text[offset:offset+4]) #length of the string
-					offset += 4
-					key = bigChr(text[offset:offset+keyLength])
-					offset += keyLength
-					parseType = (text[offset])
-					offset += 1
-					field = parseField(text, parseType)
-					output += '"' + key + '" : ' + field + ',\n' + '\t'*tabs
-				elif keyType == 0x4: #object
-					stringLength = intConv(text[offset:offset+4])
-					offset += 4
-					output += 'class : "' + bigChr(text[offset:offset+stringLength]) + '",\n'
-					offset += stringLength
-					output += '\t'*tabs + 'object_id : ' + str(objid) + ',\n'
-					output += '\t'*tabs + 'data :\n' + '\t'*tabs + '{\n' + '\t'*(tabs + 1)
-					objid += 1
-					tabs += 1
-				ignore += offset - pick - 1
-			elif currentSection == 1:
-				#print((text[pick]))
-				if (text[pick]) == 0x0a:
-					currentSection = 2
-					gettingClass = 1
-			elif currentSection == 2:
-				if tabs > 0: #for safety
-					#print(hex(pick) + ', ' + str(output.count('\n')))
-					if pick < len(text):
-						#print(intConv(text[pick:pick+4]))
-						#print(pick)
-						if gettingClass:
-							offset = pick
-							classNum = intConv(text[offset:offset+4])
-							offset += 4
-							if classNum == 0x3: #end of array
-								#print tabs
-								output = output[:-1 - tabs]
-								if output[-2:] == ',\n': #ugh this is such an ugly way to do this
-									output = output[:-1]
-								tabs -= 2
-								output = output[:-1] + '\n' + '\t'*tabs + ']'
-								arrayLevels = arrayLevels[:-1]
-								gettingClass = 0
-							elif classNum == 0x1: #object references
-								output = output[:-1 - tabs]
-								if output[-2:] == ',\n':
-									output = output[:-1]
-								if output[-2:] == '[\n': #im pretty sure there's a nicer way to do this
-									output += '\t'*(tabs-1)
-								output += '{ object_ref : ' + str(intConv(text[offset:offset+4])) + ' },\n' + '\t'*(tabs-1) + '{ '
-								offset += 4
-							else:
-								if classNum in objs:
-									if output[-1:] != '{':
-										output = output[:-1]
-									output += '\n' + '\t'*tabs + 'class : "' + objs[classNum] + '(' + str(classNum) + ')",\n' + '\t'*tabs + 'object_id : ' + str(objid) + ',\n' + '\t'*tabs + 'data :\n' + '\t'*tabs + '{'
-								else:
-									output = output[:-1] + '\n' + '\t'*tabs + 'class : "' + "missing_class" + '(' + str(classNum) + ')",\n' + '\t'*tabs + 'object_id : ' + str(objid) + ',\n' + '\t'*tabs + 'data :\n' + '\t'*tabs + '{'
-									unClassable += 1
-									'''if not classNum in [2050]:
-										print("missing class " + str(classNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1))'''
-								objid += 1
-								tabs += 1
-								firstField = 1
-								gettingClass = 0
-							ignore += offset - pick - 1
-						else:
-							offset = pick
-							fieldNum = intConv(text[offset:offset+4])
-							offset += 4
-							if firstField:
-								firstField = 0
-							else:
-								output += ','
-							field = ''
-							if fieldNum:
-								if fieldNum in params:
-									output += '\n' + '\t'*tabs + '"' + params[fieldNum] +  '(' + str(fieldNum) + ')" : '
-								else:
-									output += '\n' + '\t'*tabs + '"' + "missing_field" +  '(' + str(fieldNum) + ')" : '
-									unFieldable += 1
-									'''if not fieldNum in [7489, 7490, 7243, 7235]:
-										print("missing field " + str(fieldNum) + ', ' + hex(pick) + ', ' + str(output.count('\n') + 1))'''
-								parseType = text[offset]
-								offset += 1
-								if inMap == 1:
-									offset += 1
-									inMap = 0
-									tabs -= 1
-									field += '\n' + '\t'*tabs + '}' + '\n'
-									tabs -= 1
-									field += '\t'*(tabs) + '}'
-								field += parseField(text, parseType, stringMode)
-								ignore += offset - pick - 1
-							else:
-								tabs -= 1
-								field += '\n' + '\t'*tabs + '}' + '\n'
-								tabs -= 1
-								field += '\t'*(tabs) + '}'
-								if tabs - 1 in arrayLevels:
-									field += ',\n' + '\t'*tabs + '{ '
-									tabs += 1
-									gettingClass = 1
-								ignore += offset - pick - 1
-							output += field
+				key = bigChr(text[offset:offset+keyLength])
+				offset += keyLength
+				value = parseField(text)
+				#print (objHeir[-1:][0])
+				#output[objHeir[-1:][0]].add_field(key, value)
+				objList[-1].add_field(key, value)
+			elif keyType == 0x4: #object
+				stringLength = intConv(text[offset:offset+4])
+				offset += 4
+				name = bigChr(text[offset:offset+stringLength])
+				offset += stringLength
+				objList.append(atoms.Atom(name))
+				#objHeir.append(len(objList))
+		elif currentSection == 1: #intermediary section (whitespaces)
+			if (text[offset]) == 0x0a:
+				currentSection = 2
+				offset+=1
+			else:
+				offset+=1
+		elif currentSection == 2:
+			print("------------------heyo")
+			output.append(getClass(text))
+			#output.append(objList)
 	if unClassable or unFieldable:
 		print("there are " + (unClassable != 0)*(str(unClassable) + " unknown classes") + (unClassable != 0 and unFieldable != 0)*" and " + (unFieldable != 0)*(str(unFieldable) + " unknown fields") + " in this file")
 	else:
 		print("everything probably worked ok. to be honest, i'm not sure.")
-	return output
+	#output.append(objList)
+	finalOutput = ''
+	for item in output: #encodes all of the objects in the output list
+		finalOutput += util.json_encode(atoms.serialize(item))
+	return header + reformat(finalOutput)
 
 algos = {0:coords,
 			1:settings,
 			2:classes,
-			3:convert
+			3:objectify
 }
+inputType = [0,0,0,1,1]
 
 def magic(name, directory): #applies an algorithm to a single file (which algorithm it is is based on the 'mode' variable)
-	with open(directory + '\\' + name, 'rb') as f:
-		device_data = f.read()
-		output = ""
-		if mode == 3:
-			if device_data[42] == 0: #not sure how to implement this yet
-				output = algos[mode](device_data)
-			elif device_data[42] == '{':
-				print("this file is either already converted or isn't an unreadable file")
-		with open(directory + '\output\\converted ' + name, 'wb') as text_file:
-			text_file.write(output.encode("utf-8"))
+	device_data = fs.read_binary(directory + '\\' + name)
+	output = ""
+	if (device_data[42] == 0) and inputType[mode]: #not sure how to implement this yet
+		output = algos[mode](device_data)
+	elif (device_data[42] == '{') and not inputType[mode]:
+		print("this file is either already converted or isn't an unreadable file")
+	else:
+		print("i don't know what kind of file this is")
+	fs.write_binary(directory + '\output\\converted ' + name, output.encode("utf-8"))
 
 #these function calls are for test purposes
 #magic('test.bwproject', '.\devices\old devices')
