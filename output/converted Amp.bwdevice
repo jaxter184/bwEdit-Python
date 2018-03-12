@@ -18,7 +18,7 @@ BtWg00010001008d000016a00000000000000000{
 		"has_note_output" : false,
 		"revision_id" : "ded92ff989c88b0f8c51450482730041c3922583",
 		"revision_no" : 58852,
-		"suggest_for_audio_input" : false,
+		"suggest_for_audio_input" : true,
 		"suggest_for_note_input" : false,
 		"tags" : "",
 		"type" : "application/bitwig-device"
@@ -79,12 +79,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 4,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 4,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : 41.792214842207464
 				}
 			},
@@ -137,12 +137,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 0,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 4,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : -0.10558100000000037
 				}
 			},
@@ -216,8 +216,8 @@ BtWg00010001008d000016a00000000000000000{
 							"default_value(6958)" : 11
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(457)" : 1
 				}
 			},
@@ -270,12 +270,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 4,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 4,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : 74.74228729662256
 				}
 			},
@@ -328,12 +328,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 2,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 4,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : -2.6992822966507144
 				}
 			},
@@ -386,12 +386,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 0,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 4,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : -0.3668667142857137
 				}
 			},
@@ -497,7 +497,7 @@ BtWg00010001008d000016a00000000000000000{
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -507,7 +507,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															}
@@ -517,9 +517,9 @@ BtWg00010001008d000016a00000000000000000{
 												},
 												"preset_identifier(836)" : "PRE_FX",
 												"suggest_note_input_devices(2434)" : false,
-												"suggest_audio_input_devices(2435)" : false,
+												"suggest_audio_input_devices(2435)" : true,
 												"suggest_note_output_devices(5768)" : false,
-												"suggest_audio_output_devices(5769)" : false,
+												"suggest_audio_output_devices(5769)" : true,
 												"show_mixer_as_subtrack(1373)" : false,
 												"show_mixer_at_end_of_chain(2076)" : false,
 												"subtrack_sends_count(1374)" : 0,
@@ -533,7 +533,7 @@ BtWg00010001008d000016a00000000000000000{
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -545,7 +545,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 10
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -557,7 +557,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 2
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -567,7 +567,7 @@ BtWg00010001008d000016a00000000000000000{
 									"data" : {
 										"source_component(248)" : null,
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -579,7 +579,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 6
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -589,7 +589,7 @@ BtWg00010001008d000016a00000000000000000{
 									"data" : {
 										"source_component(248)" : null,
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 1.0
 									}
 								}
@@ -638,7 +638,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 29
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -648,7 +648,7 @@ BtWg00010001008d000016a00000000000000000{
 									"data" : {
 										"source_component(248)" : null,
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 3.0
 									}
 								},
@@ -660,7 +660,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 17
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -672,7 +672,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 21
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -684,7 +684,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 25
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -694,7 +694,7 @@ BtWg00010001008d000016a00000000000000000{
 									"data" : {
 										"source_component(248)" : null,
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 1.0
 									}
 								}
@@ -759,12 +759,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 2,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 0,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : 25.36000000000004
 				}
 			},
@@ -817,12 +817,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 4,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 0,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : 122.22037026508347
 				}
 			},
@@ -888,7 +888,7 @@ BtWg00010001008d000016a00000000000000000{
 																		"object_ref" : 47
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -966,13 +966,13 @@ BtWg00010001008d000016a00000000000000000{
 																					"default_value(6958)" : 11
 																				}
 																			},
-																			"missing_field(7489)" : false,
-																			"missing_field(7490)" : false,
+																			"missing_field(7489)" : true,
+																			"missing_field(7490)" : true,
 																			"value(457)" : 0
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -1029,17 +1029,17 @@ BtWg00010001008d000016a00000000000000000{
 																					"unit(296)" : 4,
 																					"decimal_digit_count(297)" : -1,
 																					"edit_style(298)" : 0,
-																					"parameter_smoothing(4433)" : false,
-																					"allow_automation_curves(4434)" : false
+																					"parameter_smoothing(4433)" : true,
+																					"allow_automation_curves(4434)" : true
 																				}
 																			},
-																			"missing_field(7489)" : false,
-																			"missing_field(7490)" : false,
+																			"missing_field(7489)" : true,
+																			"missing_field(7490)" : true,
 																			"value(712)" : 123.72568269567623
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -1049,7 +1049,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -1106,17 +1106,17 @@ BtWg00010001008d000016a00000000000000000{
 																					"unit(296)" : 0,
 																					"decimal_digit_count(297)" : -1,
 																					"edit_style(298)" : 0,
-																					"parameter_smoothing(4433)" : false,
-																					"allow_automation_curves(4434)" : false
+																					"parameter_smoothing(4433)" : true,
+																					"allow_automation_curves(4434)" : true
 																				}
 																			},
-																			"missing_field(7489)" : false,
-																			"missing_field(7490)" : false,
+																			"missing_field(7489)" : true,
+																			"missing_field(7490)" : true,
 																			"value(712)" : -0.2806162457000304
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -1126,7 +1126,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 1.0
 																}
 															}
@@ -1143,7 +1143,7 @@ BtWg00010001008d000016a00000000000000000{
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1155,7 +1155,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 56
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1273,13 +1273,13 @@ BtWg00010001008d000016a00000000000000000{
 														"default_value(6958)" : 0
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(457)" : 1
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1336,17 +1336,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 1,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : 0.2949999999999996
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1403,17 +1403,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 1,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : 0.15050000000000002
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1470,17 +1470,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 2,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : 1.0
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1519,7 +1519,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															}
@@ -1542,13 +1542,13 @@ BtWg00010001008d000016a00000000000000000{
 														"default_value(6957)" : false
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(210)" : false
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -1611,12 +1611,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 0,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 0,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : -0.1435805862031007
 				}
 			},
@@ -1716,17 +1716,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 14,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : -0.08477499999999993
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1783,17 +1783,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 14,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : -0.23132499999999956
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1850,17 +1850,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 14,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : -0.848928571428572
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1917,17 +1917,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 1,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : 0.2211428571428573
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -1984,17 +1984,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 1,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : 0.5200000000000004
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -2051,17 +2051,17 @@ BtWg00010001008d000016a00000000000000000{
 														"unit(296)" : 1,
 														"decimal_digit_count(297)" : -1,
 														"edit_style(298)" : 0,
-														"parameter_smoothing(4433)" : false,
-														"allow_automation_curves(4434)" : false
+														"parameter_smoothing(4433)" : true,
+														"allow_automation_curves(4434)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(712)" : 0.7350000000000004
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -2179,8 +2179,8 @@ BtWg00010001008d000016a00000000000000000{
 														"default_value(6958)" : 2
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(457)" : 2
 											}
 										},
@@ -2224,7 +2224,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															}
@@ -2244,16 +2244,16 @@ BtWg00010001008d000016a00000000000000000{
 													"object_id" : 183,
 													"data" : {
 														"icon_name(4755)" : "",
-														"default_value(6957)" : false
+														"default_value(6957)" : true
 													}
 												},
-												"missing_field(7489)" : false,
-												"missing_field(7490)" : false,
+												"missing_field(7489)" : true,
+												"missing_field(7490)" : true,
 												"value(210)" : false
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -2265,7 +2265,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 64
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -2429,7 +2429,7 @@ BtWg00010001008d000016a00000000000000000{
 																																"object_ref" : 131
 																															},
 																															"outport_index(249)" : 0,
-																															"high_quality(1943)" : false,
+																															"high_quality(1943)" : true,
 																															"unconnected_value(6443)" : 0.0
 																														}
 																													},
@@ -2507,13 +2507,13 @@ BtWg00010001008d000016a00000000000000000{
 																																			"default_value(6958)" : 11
 																																		}
 																																	},
-																																	"missing_field(7489)" : false,
-																																	"missing_field(7490)" : false,
+																																	"missing_field(7489)" : true,
+																																	"missing_field(7490)" : true,
 																																	"value(457)" : 0
 																																}
 																															},
 																															"outport_index(249)" : 0,
-																															"high_quality(1943)" : false,
+																															"high_quality(1943)" : true,
 																															"unconnected_value(6443)" : 0.0
 																														}
 																													},
@@ -2525,7 +2525,7 @@ BtWg00010001008d000016a00000000000000000{
 																																"object_ref" : 60
 																															},
 																															"outport_index(249)" : 0,
-																															"high_quality(1943)" : false,
+																															"high_quality(1943)" : true,
 																															"unconnected_value(6443)" : 0.0
 																														}
 																													},
@@ -2535,7 +2535,7 @@ BtWg00010001008d000016a00000000000000000{
 																														"data" : {
 																															"source_component(248)" : null,
 																															"outport_index(249)" : 0,
-																															"high_quality(1943)" : false,
+																															"high_quality(1943)" : true,
 																															"unconnected_value(6443)" : 0.0
 																														}
 																													},
@@ -2547,7 +2547,7 @@ BtWg00010001008d000016a00000000000000000{
 																																"object_ref" : 127
 																															},
 																															"outport_index(249)" : 0,
-																															"high_quality(1943)" : false,
+																															"high_quality(1943)" : true,
 																															"unconnected_value(6443)" : 0.0
 																														}
 																													},
@@ -2557,7 +2557,7 @@ BtWg00010001008d000016a00000000000000000{
 																														"data" : {
 																															"source_component(248)" : null,
 																															"outport_index(249)" : 0,
-																															"high_quality(1943)" : false,
+																															"high_quality(1943)" : true,
 																															"unconnected_value(6443)" : 1.0
 																														}
 																													}
@@ -2574,7 +2574,7 @@ BtWg00010001008d000016a00000000000000000{
 																									}
 																								},
 																								"outport_index(249)" : 0,
-																								"high_quality(1943)" : false,
+																								"high_quality(1943)" : true,
 																								"unconnected_value(6443)" : 0.0
 																							}
 																						},
@@ -2652,13 +2652,13 @@ BtWg00010001008d000016a00000000000000000{
 																												"default_value(6958)" : 11
 																											}
 																										},
-																										"missing_field(7489)" : false,
-																										"missing_field(7490)" : false,
+																										"missing_field(7489)" : true,
+																										"missing_field(7490)" : true,
 																										"value(457)" : 1
 																									}
 																								},
 																								"outport_index(249)" : 0,
-																								"high_quality(1943)" : false,
+																								"high_quality(1943)" : true,
 																								"unconnected_value(6443)" : 0.0
 																							}
 																						},
@@ -2715,17 +2715,17 @@ BtWg00010001008d000016a00000000000000000{
 																												"unit(296)" : 4,
 																												"decimal_digit_count(297)" : -1,
 																												"edit_style(298)" : 4,
-																												"parameter_smoothing(4433)" : false,
-																												"allow_automation_curves(4434)" : false
+																												"parameter_smoothing(4433)" : true,
+																												"allow_automation_curves(4434)" : true
 																											}
 																										},
-																										"missing_field(7489)" : false,
-																										"missing_field(7490)" : false,
+																										"missing_field(7489)" : true,
+																										"missing_field(7490)" : true,
 																										"value(712)" : 41.97269383468328
 																									}
 																								},
 																								"outport_index(249)" : 0,
-																								"high_quality(1943)" : false,
+																								"high_quality(1943)" : true,
 																								"unconnected_value(6443)" : 0.0
 																							}
 																						},
@@ -2735,7 +2735,7 @@ BtWg00010001008d000016a00000000000000000{
 																							"data" : {
 																								"source_component(248)" : null,
 																								"outport_index(249)" : 0,
-																								"high_quality(1943)" : false,
+																								"high_quality(1943)" : true,
 																								"unconnected_value(6443)" : 0.0
 																							}
 																						},
@@ -2792,17 +2792,17 @@ BtWg00010001008d000016a00000000000000000{
 																												"unit(296)" : 0,
 																												"decimal_digit_count(297)" : -1,
 																												"edit_style(298)" : 4,
-																												"parameter_smoothing(4433)" : false,
-																												"allow_automation_curves(4434)" : false
+																												"parameter_smoothing(4433)" : true,
+																												"allow_automation_curves(4434)" : true
 																											}
 																										},
-																										"missing_field(7489)" : false,
-																										"missing_field(7490)" : false,
+																										"missing_field(7489)" : true,
+																										"missing_field(7490)" : true,
 																										"value(712)" : -0.06915242857142816
 																									}
 																								},
 																								"outport_index(249)" : 0,
-																								"high_quality(1943)" : false,
+																								"high_quality(1943)" : true,
 																								"unconnected_value(6443)" : 0.0
 																							}
 																						},
@@ -2812,7 +2812,7 @@ BtWg00010001008d000016a00000000000000000{
 																							"data" : {
 																								"source_component(248)" : null,
 																								"outport_index(249)" : 0,
-																								"high_quality(1943)" : false,
+																								"high_quality(1943)" : true,
 																								"unconnected_value(6443)" : 1.0
 																							}
 																						}
@@ -2829,7 +2829,7 @@ BtWg00010001008d000016a00000000000000000{
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -2839,7 +2839,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 3.0
 																}
 															},
@@ -2896,17 +2896,17 @@ BtWg00010001008d000016a00000000000000000{
 																					"unit(296)" : 4,
 																					"decimal_digit_count(297)" : -1,
 																					"edit_style(298)" : 4,
-																					"parameter_smoothing(4433)" : false,
-																					"allow_automation_curves(4434)" : false
+																					"parameter_smoothing(4433)" : true,
+																					"allow_automation_curves(4434)" : true
 																				}
 																			},
-																			"missing_field(7489)" : false,
-																			"missing_field(7490)" : false,
+																			"missing_field(7489)" : true,
+																			"missing_field(7490)" : true,
 																			"value(712)" : 78.91853092952803
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -2963,17 +2963,17 @@ BtWg00010001008d000016a00000000000000000{
 																					"unit(296)" : 2,
 																					"decimal_digit_count(297)" : -1,
 																					"edit_style(298)" : 4,
-																					"parameter_smoothing(4433)" : false,
-																					"allow_automation_curves(4434)" : false
+																					"parameter_smoothing(4433)" : true,
+																					"allow_automation_curves(4434)" : true
 																				}
 																			},
-																			"missing_field(7489)" : false,
-																			"missing_field(7490)" : false,
+																			"missing_field(7489)" : true,
+																			"missing_field(7490)" : true,
 																			"value(712)" : 0.5469315232619577
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -3030,17 +3030,17 @@ BtWg00010001008d000016a00000000000000000{
 																					"unit(296)" : 0,
 																					"decimal_digit_count(297)" : -1,
 																					"edit_style(298)" : 4,
-																					"parameter_smoothing(4433)" : false,
-																					"allow_automation_curves(4434)" : false
+																					"parameter_smoothing(4433)" : true,
+																					"allow_automation_curves(4434)" : true
 																				}
 																			},
-																			"missing_field(7489)" : false,
-																			"missing_field(7490)" : false,
+																			"missing_field(7489)" : true,
+																			"missing_field(7490)" : true,
 																			"value(712)" : -0.40329487191738644
 																		}
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															},
@@ -3050,7 +3050,7 @@ BtWg00010001008d000016a00000000000000000{
 																"data" : {
 																	"source_component(248)" : null,
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 1.0
 																}
 															}
@@ -3067,7 +3067,7 @@ BtWg00010001008d000016a00000000000000000{
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -3077,7 +3077,7 @@ BtWg00010001008d000016a00000000000000000{
 									"data" : {
 										"source_component(248)" : null,
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -3087,9 +3087,9 @@ BtWg00010001008d000016a00000000000000000{
 					},
 					"preset_identifier(836)" : "POST_FX",
 					"suggest_note_input_devices(2434)" : false,
-					"suggest_audio_input_devices(2435)" : false,
+					"suggest_audio_input_devices(2435)" : true,
 					"suggest_note_output_devices(5768)" : false,
-					"suggest_audio_output_devices(5769)" : false,
+					"suggest_audio_output_devices(5769)" : true,
 					"show_mixer_as_subtrack(1373)" : false,
 					"show_mixer_at_end_of_chain(2076)" : false,
 					"subtrack_sends_count(1374)" : 0,
@@ -3181,12 +3181,12 @@ BtWg00010001008d000016a00000000000000000{
 							"unit(296)" : 1,
 							"decimal_digit_count(297)" : -1,
 							"edit_style(298)" : 0,
-							"parameter_smoothing(4433)" : false,
-							"allow_automation_curves(4434)" : false
+							"parameter_smoothing(4433)" : true,
+							"allow_automation_curves(4434)" : true
 						}
 					},
-					"missing_field(7489)" : false,
-					"missing_field(7490)" : false,
+					"missing_field(7489)" : true,
+					"missing_field(7490)" : true,
 					"value(712)" : 1.0
 				}
 			},
@@ -3252,7 +3252,7 @@ BtWg00010001008d000016a00000000000000000{
 																		"object_ref" : 37
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															}
@@ -3265,7 +3265,7 @@ BtWg00010001008d000016a00000000000000000{
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -3306,7 +3306,7 @@ BtWg00010001008d000016a00000000000000000{
 																		"object_ref" : 185
 																	},
 																	"outport_index(249)" : 0,
-																	"high_quality(1943)" : false,
+																	"high_quality(1943)" : true,
 																	"unconnected_value(6443)" : 0.0
 																}
 															}
@@ -3319,7 +3319,7 @@ BtWg00010001008d000016a00000000000000000{
 											}
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								},
@@ -3331,7 +3331,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 251
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -3383,7 +3383,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 68
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -3430,7 +3430,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 189
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -3480,7 +3480,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 64
 										},
 										"outport_index(249)" : 1,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -4009,7 +4009,7 @@ BtWg00010001008d000016a00000000000000000{
 													"data_model(6220)" : {
 														"object_ref" : 166
 													},
-													"is_horizontal(6255)" : false,
+													"is_horizontal(6255)" : true,
 													"break_count(6256)" : 4,
 													"label_style(6257)" : 0
 												}
@@ -4292,7 +4292,7 @@ BtWg00010001008d000016a00000000000000000{
 													},
 													"spectrum(6575)" : 3,
 													"color(6577)" : 1,
-													"scale_with_frequency(6582)" : false
+													"scale_with_frequency(6582)" : true
 												}
 											},
 											{
@@ -4310,13 +4310,13 @@ BtWg00010001008d000016a00000000000000000{
 													"is_visible(6309)" : true,
 													"is_enabled(6310)" : true,
 													"tooltip_text(6867)" : "",
-													"show_x_axis(6888)" : false,
-													"show_y_axis(6889)" : false,
+													"show_x_axis(6888)" : true,
+													"show_y_axis(6889)" : true,
 													"clip_x_axis_lines(6890)" : false,
 													"clip_y_axis_lines(6891)" : false,
 													"show_x_axis_label(6516)" : false,
 													"show_y_axis_label(6517)" : false,
-													"show_info_on_hover(6714)" : false
+													"show_info_on_hover(6714)" : true
 												}
 											},
 											{
@@ -4350,7 +4350,7 @@ BtWg00010001008d000016a00000000000000000{
 																"is_visible(6309)" : true,
 																"is_enabled(6310)" : true,
 																"tooltip_text(6867)" : "",
-																"is_interactive(6499)" : false,
+																"is_interactive(6499)" : true,
 																"color(6518)" : 2,
 																"label(6496)" : "L",
 																"offset_x(6500)" : 0.0,
@@ -4359,7 +4359,7 @@ BtWg00010001008d000016a00000000000000000{
 																	"object_ref" : 2
 																},
 																"component_y(6513)" : null,
-																"show_modulated_value(6730)" : false,
+																"show_modulated_value(6730)" : true,
 																"interpolation(6893)" : 0,
 																"interpolation_parameter(6894)" : 0.0,
 																"gain_x(6991)" : 1.0,
@@ -4388,7 +4388,7 @@ BtWg00010001008d000016a00000000000000000{
 																"is_visible(6309)" : true,
 																"is_enabled(6310)" : true,
 																"tooltip_text(6867)" : "",
-																"is_interactive(6499)" : false,
+																"is_interactive(6499)" : true,
 																"color(6518)" : 2,
 																"label(6496)" : "M",
 																"offset_x(6500)" : 0.0,
@@ -4399,7 +4399,7 @@ BtWg00010001008d000016a00000000000000000{
 																"component_y(6513)" : {
 																	"object_ref" : 21
 																},
-																"show_modulated_value(6730)" : false,
+																"show_modulated_value(6730)" : true,
 																"interpolation(6893)" : 0,
 																"interpolation_parameter(6894)" : 0.0,
 																"gain_x(6991)" : 1.0,
@@ -4426,7 +4426,7 @@ BtWg00010001008d000016a00000000000000000{
 																"is_visible(6309)" : true,
 																"is_enabled(6310)" : true,
 																"tooltip_text(6867)" : "",
-																"is_interactive(6499)" : false,
+																"is_interactive(6499)" : true,
 																"color(6518)" : 2,
 																"label(6496)" : "H",
 																"offset_x(6500)" : 0.0,
@@ -4435,7 +4435,7 @@ BtWg00010001008d000016a00000000000000000{
 																	"object_ref" : 81
 																},
 																"component_y(6513)" : null,
-																"show_modulated_value(6730)" : false,
+																"show_modulated_value(6730)" : true,
 																"interpolation(6893)" : 0,
 																"interpolation_parameter(6894)" : 0.0,
 																"gain_x(6991)" : 1.0,
@@ -4455,13 +4455,13 @@ BtWg00010001008d000016a00000000000000000{
 													"brightness(6245)" : 1,
 													"color(6537)" : 1,
 													"missing_field(7243)" : 1.0,
-													"show_modulated_value(6731)" : false
+													"show_modulated_value(6731)" : true
 												}
 											}
 										],
 										"border_style(6228)" : 1,
 										"title(6242)" : "PRE",
-										"show_title(6243)" : false,
+										"show_title(6243)" : true,
 										"title_color(6522)" : 2,
 										"brightness(6245)" : 3,
 										"x_min(6504)" : 27.0,
@@ -4782,7 +4782,7 @@ BtWg00010001008d000016a00000000000000000{
 													},
 													"spectrum(6575)" : 3,
 													"color(6577)" : 5,
-													"scale_with_frequency(6582)" : false
+													"scale_with_frequency(6582)" : true
 												}
 											},
 											{
@@ -4800,13 +4800,13 @@ BtWg00010001008d000016a00000000000000000{
 													"is_visible(6309)" : true,
 													"is_enabled(6310)" : true,
 													"tooltip_text(6867)" : "",
-													"show_x_axis(6888)" : false,
-													"show_y_axis(6889)" : false,
+													"show_x_axis(6888)" : true,
+													"show_y_axis(6889)" : true,
 													"clip_x_axis_lines(6890)" : false,
 													"clip_y_axis_lines(6891)" : false,
 													"show_x_axis_label(6516)" : false,
 													"show_y_axis_label(6517)" : false,
-													"show_info_on_hover(6714)" : false
+													"show_info_on_hover(6714)" : true
 												}
 											},
 											{
@@ -4840,7 +4840,7 @@ BtWg00010001008d000016a00000000000000000{
 																"is_visible(6309)" : true,
 																"is_enabled(6310)" : true,
 																"tooltip_text(6867)" : "",
-																"is_interactive(6499)" : false,
+																"is_interactive(6499)" : true,
 																"color(6518)" : 4,
 																"label(6496)" : "L",
 																"offset_x(6500)" : 0.0,
@@ -4849,7 +4849,7 @@ BtWg00010001008d000016a00000000000000000{
 																	"object_ref" : 222
 																},
 																"component_y(6513)" : null,
-																"show_modulated_value(6730)" : false,
+																"show_modulated_value(6730)" : true,
 																"interpolation(6893)" : 0,
 																"interpolation_parameter(6894)" : 0.0,
 																"gain_x(6991)" : 1.0,
@@ -4878,7 +4878,7 @@ BtWg00010001008d000016a00000000000000000{
 																"is_visible(6309)" : true,
 																"is_enabled(6310)" : true,
 																"tooltip_text(6867)" : "",
-																"is_interactive(6499)" : false,
+																"is_interactive(6499)" : true,
 																"color(6518)" : 4,
 																"label(6496)" : "M",
 																"offset_x(6500)" : 0.0,
@@ -4889,7 +4889,7 @@ BtWg00010001008d000016a00000000000000000{
 																"component_y(6513)" : {
 																	"object_ref" : 240
 																},
-																"show_modulated_value(6730)" : false,
+																"show_modulated_value(6730)" : true,
 																"interpolation(6893)" : 0,
 																"interpolation_parameter(6894)" : 0.0,
 																"gain_x(6991)" : 1.0,
@@ -4916,7 +4916,7 @@ BtWg00010001008d000016a00000000000000000{
 																"is_visible(6309)" : true,
 																"is_enabled(6310)" : true,
 																"tooltip_text(6867)" : "",
-																"is_interactive(6499)" : false,
+																"is_interactive(6499)" : true,
 																"color(6518)" : 4,
 																"label(6496)" : "H",
 																"offset_x(6500)" : 0.0,
@@ -4925,7 +4925,7 @@ BtWg00010001008d000016a00000000000000000{
 																	"object_ref" : 60
 																},
 																"component_y(6513)" : null,
-																"show_modulated_value(6730)" : false,
+																"show_modulated_value(6730)" : true,
 																"interpolation(6893)" : 0,
 																"interpolation_parameter(6894)" : 0.0,
 																"gain_x(6991)" : 1.0,
@@ -4945,13 +4945,13 @@ BtWg00010001008d000016a00000000000000000{
 													"brightness(6245)" : 1,
 													"color(6537)" : 5,
 													"missing_field(7243)" : 1.0,
-													"show_modulated_value(6731)" : false
+													"show_modulated_value(6731)" : true
 												}
 											}
 										],
 										"border_style(6228)" : 1,
 										"title(6242)" : "POST",
-										"show_title(6243)" : false,
+										"show_title(6243)" : true,
 										"title_color(6522)" : 4,
 										"brightness(6245)" : 3,
 										"x_min(6504)" : 27.0,
@@ -5705,7 +5705,7 @@ BtWg00010001008d000016a00000000000000000{
 											"object_ref" : 255
 										},
 										"outport_index(249)" : 0,
-										"high_quality(1943)" : false,
+										"high_quality(1943)" : true,
 										"unconnected_value(6443)" : 0.0
 									}
 								}
@@ -5720,7 +5720,7 @@ BtWg00010001008d000016a00000000000000000{
 							"name(498)" : "",
 							"description(4741)" : "",
 							"decorated_name(499)" : " Audio in (PARENT)",
-							"is_inport(500)" : false,
+							"is_inport(500)" : true,
 							"is_optional(1384)" : false,
 							"exclude_from_graph(7174)" : false,
 							"channel_count(372)" : 3
@@ -5743,8 +5743,8 @@ BtWg00010001008d000016a00000000000000000{
 		"category(390)" : "Destruction",
 		"device_type(391)" : 0,
 		"suggest_for_note_input(4846)" : false,
-		"suggest_for_audio_input(4847)" : false,
-		"has_been_modified(392)" : false,
+		"suggest_for_audio_input(4847)" : true,
+		"has_been_modified(392)" : true,
 		"color_tint(6384)" : 0,
 		"header_area_panel(6417)" : null
 	}

@@ -62,7 +62,7 @@ def parseField(text, stringType = 0):
 		return val
 	elif parseType == 0x05:	#boolean
 		offset += 1
-		return bool(text[offset])
+		return bool(text[offset-1])
 	elif parseType == 0x06:	#float
 		flVal = struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0]
 		offset += 4
@@ -316,14 +316,19 @@ replaceList = ['class', 'object_id', 'data', 'type', 'object_ref']
 
 def reformat(input):
 	output = input
-	#for replaceThese in replaceList: #optional
-	#	output = output.replace('"' + replaceThese + '":', replaceThese + ' :')
+	'''
+	#optional
+	for replaceThese in replaceList:
+		output = output.replace('"' + replaceThese + '":', replaceThese + ' :')
+	'''
 	output = output.replace('  ', '\t')
 	output = output.replace('":', '" :') #getting rid of this crashes stuff
 	output = output.replace('}{', '}\n{')
-	#i = 0
-	#length = len(output)
-	'''while (i < len(output)): #all of this is also optional
+	'''
+	#optional
+	i = 0
+	length = len(output)
+	while (i < len(output)):
 		if (output[i:i+3] == ': {'):
 			j = 0
 			while(output[i+j+5] == '\t'):
@@ -379,28 +384,9 @@ def reformat(input):
 				#if(output[i:i+2] != '\\\\'):
 					#output = output[i:] + output[:i]
 				i+=1
-		i+=1'''
-	#output = output.replace('data : ', 'data :') #optional
-	#output = output.replace('(4433)" : false', '(4433)" : true') #optional
-	#output = output.replace('(4434)" : false', '(4434)" : true') #optional
-	#output = output.replace('(1943)" : false', '(1943)" : true') #optional
-	#output = output.replace('(2435)" : false', '(2435)" : true') #optional
-	#output = output.replace('(5769)" : false', '(5769)" : true') #optional
-	output = output.replace('(2270)" : false', '(2270)" : true')
-	output = output.replace('(6309)" : false', '(6309)" : true')
-	output = output.replace('(6310)" : false', '(6310)" : true')
-	#output = output.replace('(6255)" : false', '(6255)" : true') #optional
-	#output = output.replace('(6582)" : false', '(6582)" : true') #optional
-	#output = output.replace('(6888)" : false', '(6888)" : true') #optional
-	#output = output.replace('(6889)" : false', '(6889)" : true') #optional
-	#output = output.replace('(6714)" : false', '(6714)" : true') #optional
-	#output = output.replace('(6499)" : false', '(6499)" : true') #optional
-	#output = output.replace('(6730)" : false', '(6730)" : true') #optional
-	#output = output.replace('(6731)" : false', '(6731)" : true') #optional
-	#output = output.replace('(6243)" : false', '(6243)" : true') #optional
-	#output = output.replace('(4847)" : false', '(4847)" : true') #optional
-	#output = output.replace('(392)" : false', '(392)" : true') #optional
-	#output = output.replace('(6957)" : false', '(6957)" : true') #optional
+		i+=1
+	'''
+	output = output.replace('data : ', 'data :') #optional
 	return output
 		
 def objectify(text):
