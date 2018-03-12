@@ -316,10 +316,91 @@ replaceList = ['class', 'object_id', 'data', 'type', 'object_ref']
 
 def reformat(input):
 	output = input
-	for replaceThese in replaceList:
-		output = output.replace('"' + replaceThese + '":', replaceThese + ' :')
+	#for replaceThese in replaceList: #optional
+	#	output = output.replace('"' + replaceThese + '":', replaceThese + ' :')
 	output = output.replace('  ', '\t')
+	output = output.replace('":', '" :') #getting rid of this crashes stuff
 	output = output.replace('}{', '}\n{')
+	#i = 0
+	#length = len(output)
+	'''while (i < len(output)): #all of this is also optional
+		if (output[i:i+3] == ': {'):
+			j = 0
+			while(output[i+j+5] == '\t'):
+				j+=1
+			output = output[:i] + ': \n' + j*'\t' + '{' + output[i+3:]
+		elif (output[i:i+3] == ':{'):
+			j = 0
+			while(output[i+j+4] == '\t'):
+				j+=1
+			output = output[:i] + ':\n' + j*'\t' + '{' + output[i+3:]
+		elif (output[i:i+10] == 'object_ref'):
+			j = 0
+			while(output[i+j] != '\n'):
+				j+=1
+			k = 0
+			while(output[i-k-1] == '\t'):
+				k+=1
+			output = output[:i-2*k-2] + '{ ' + output[i:i+j] + ' ' +  output[i+j+k:]
+		elif output[i:i+3] == ': [':
+			skip = 0
+			while(output[i+skip] != '\n'):
+				skip+=1
+			skip+=1
+			j = 0
+			while(output[i+j+skip] == '\t'):
+				j+=1
+			if(output[i+j+skip] == '{'):
+				j-=1
+			output = output[:i] + ': \n' + (j)*'\t' + '[' + output[i+3:]
+			if (output[i+j+4] == ']'):
+				output = output[:i+j+4] + '\n' + j*'\t' + output[i+j+4:]
+		elif output[i:i+9] == 'data : [\n':
+			j=10
+			while(output[i+j] == '\t'):
+				j+=1
+			if (output[i+j:i+j+5] == '0.5,\n'):
+				j += 5
+				while(output[i+j] == '\t'):
+					j+=1
+				if (output[i+j:i+j+5] == '0.5,\n'):
+					j += 5
+					while(output[i+j] == '\t'):
+						j+=1
+					if (output[i+j:i+j+4] == '0.5\n'):
+						j += 4
+						while(output[i+j] == '\t'):
+							j+=1
+						if (output[i+j] == ']'):
+							output = output[:i] + 'data :  [0.5, 0.5, 0.5]' + output[i+j + 1:]
+							i+=22
+		elif output[i:i+16] == '"code(6264)" : "':
+			while(output[i:i+2] != '",'):
+				#if(output[i:i+2] != '\\\\'):
+					#output = output[i:] + output[:i]
+				i+=1
+		i+=1'''
+	#output = output.replace('data : ', 'data :') #optional
+	#output = output.replace('(4433)" : false', '(4433)" : true') #optional
+	#output = output.replace('(4434)" : false', '(4434)" : true') #optional
+	#output = output.replace('(1943)" : false', '(1943)" : true') #optional
+	#output = output.replace('(2435)" : false', '(2435)" : true') #optional
+	#output = output.replace('(5769)" : false', '(5769)" : true') #optional
+	output = output.replace('(2270)" : false', '(2270)" : true')
+	output = output.replace('(6309)" : false', '(6309)" : true')
+	output = output.replace('(6310)" : false', '(6310)" : true')
+	#output = output.replace('(6255)" : false', '(6255)" : true') #optional
+	#output = output.replace('(6582)" : false', '(6582)" : true') #optional
+	#output = output.replace('(6888)" : false', '(6888)" : true') #optional
+	#output = output.replace('(6889)" : false', '(6889)" : true') #optional
+	#output = output.replace('(6714)" : false', '(6714)" : true') #optional
+	#output = output.replace('(6499)" : false', '(6499)" : true') #optional
+	#output = output.replace('(6730)" : false', '(6730)" : true') #optional
+	#output = output.replace('(6731)" : false', '(6731)" : true') #optional
+	#output = output.replace('(6243)" : false', '(6243)" : true') #optional
+	#output = output.replace('(4847)" : false', '(4847)" : true') #optional
+	#output = output.replace('(392)" : false', '(392)" : true') #optional
+	#output = output.replace('(6957)" : false', '(6957)" : true') #optional
 	return output
 		
 def objectify(text):
@@ -384,6 +465,7 @@ def objectify(text):
 	for item in output: #encodes all of the objects in the output list
 		finalOutput += util.json_encode(atoms.serialize(item))
 	return header + reformat(finalOutput)
+	#return header + finalOutput
 
 algos = {0:coords,
 			1:settings,
