@@ -13,11 +13,16 @@ def serialize(obj, state = None):
 				'object_ref': state.index(obj) + 1,
 			}'''
 		state.append(obj)
-		return OrderedDict([
-			('class', obj.classname),
-			('object_id', state.index(obj) + 1),
-			('data', serialize(obj.fields, state))
-		])
+		try:
+			obj.classname
+		except AttributeError:
+			return serialize(obj.fields, state) #maybe not the best way to do this, feels a little hacky
+		else:
+			return OrderedDict([
+				('class', obj.classname),
+				('object_id', state.index(obj) + 1),
+				('data', serialize(obj.fields, state))
+			])
 	if isinstance(obj, list):
 		return [serialize(x, state) for x in obj]
 	if isinstance(obj, dict):

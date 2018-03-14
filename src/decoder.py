@@ -135,19 +135,24 @@ def parseField(text, stringType = 0):
 		#print (tempList)
 		offset += 4
 		return tempList
-	elif parseType == 0x14:	#map string to object
-		field += 'type : "map<string,object>",\n' + 'data :\n' + '{\n' 
+	elif parseType == 0x14:	#map string
+		#field += 'type : "map<string,object>",\n' + 'data :\n' + '{\n'
+		object = atoms.Atom()
 		parseType2 = (text[offset])
 		offset += 1
-		return field
-		if parseType2 == 0x1: 
-			stringLength = intConv(text[offset:offset+4])
-			offset += 4
-			field += bigChr(text[offset:offset+stringLength])
-			offset += stringLength
-		inMap = 1
-		getClass(text)
-		return field
+		if parseType2 == 0x1:
+			object.add_field("type", "map<string,object>")
+		stringLength = intConv(text[offset:offset+4])
+		offset += 4
+		string = bigChr(text[offset:offset+stringLength])
+		offset += stringLength
+		mapping = atoms.Atom()
+		object.add_field("type", "map<string,object>")
+		mapping.add_field(string, getClass(text))
+		object.add_field("data", mapping)
+		offset+=1
+		#inMap = 1
+		return object
 	elif parseType == 0x15:	#16 character hex value
 		for i in range(16):
 			if i in [4,6,8,10]:
@@ -386,7 +391,18 @@ def reformat(input):
 				i+=1
 		i+=1
 	'''
-	output = output.replace('data : ', 'data :') #optional
+	i = 0
+	length = len(output)
+	while (i < len(output)):
+		if output[i:i+16] == '\"code(6264)" : \"':
+			i+=16
+			while(output[i:i+2] != '\",'):
+				if(output[i] == '\\'):
+					output = output[:i] + output[i+1:]
+				i+=1
+		i+=1
+		
+	#output = output.replace('data : ', 'data :') #optional
 	return output
 		
 def objectify(text):
@@ -439,7 +455,6 @@ def objectify(text):
 			else:
 				offset+=1
 		elif currentSection == 2:
-			print("------------------heyo")
 			output.append(getClass(text))
 			#output.append(objList)
 	if unClassable or unFieldable:
