@@ -3,6 +3,7 @@
 from collections import OrderedDict
 from src.lib import util
 
+idCount = 0
 ## Serializes all device atoms
 def serialize(obj, state = None):
 	if state == None:
@@ -36,6 +37,10 @@ def serialize(obj, state = None):
 		return serialize(obj.fields, state)
 	return obj
 
+def resetId(): #geez this feels so hacky -jaxter184
+	global idCount
+	idCount = 0
+
 class Reference:
 	def __init__(self, classNum = 0):
 		self.classNum = classNum
@@ -52,12 +57,15 @@ class Color:
 class Atom:
 
 	def __init__(self, classname = None, fields = None):
+		global idCount
 		if classname != None:
 			self.classname = classname
 		if fields != None:
 			self.fields = fields
 		else:
 			self.fields = OrderedDict([])
+		self.id = idCount
+		idCount+=1
 
 	def add_inport(self, atom):
 		self.fields['settings'].add_connection(InportConnection(atom))

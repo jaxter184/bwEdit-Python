@@ -32,7 +32,7 @@ types = {1:'int8',
 }
 
 def parseField(text, stringType = 0):
-	global offset, inMap, output, stringMode, objList, objHeir, tempObjList #ugh so many global variables
+	global offset, output
 	parseType = text[offset]
 	offset += 1
 	'''if parseType in types:
@@ -115,7 +115,6 @@ def parseField(text, stringType = 0):
 		objNum = intConv(text[offset:offset+4])
 		offset += 4
 		out = atoms.Reference(objNum)
-		#objList.append(out)
 		return out
 	elif parseType == 0x0d: #nested header
 		headerLength = intConv(text[offset:offset+4])
@@ -151,7 +150,6 @@ def parseField(text, stringType = 0):
 		mapping.add_field(string, getClass(text))
 		object.add_field("data", mapping)
 		offset+=1
-		#inMap = 1
 		return object
 	elif parseType == 0x15:	#16 character hex value
 		for i in range(16):
@@ -276,7 +274,7 @@ def classes(text):
 	return output[1:]
 
 def getClass(text):
-	global offset, inMap, output, stringMode, objList, objHeir, tempObjList, unClassable, unFieldable
+	global offset, output, stringMode, unClassable, unFieldable
 	#print("pos: " + hex(offset))
 	classNum = intConv(text[offset:offset+4])
 	offset += 4
@@ -303,18 +301,11 @@ def getClass(text):
 			else:
 				fieldName = "missing_field" +  '(' + str(fieldNum) + ')'
 				unFieldable += 1
-			'''if inMap == 1: #redo this
-				offset += 1
-				inMap = 0'''
 			value = parseField(text)
 			object.add_field(fieldName, value)
 			fieldNum = intConv(text[offset:offset+4])
 			offset += 4
 		#print ("broke out of object")
-		#objHeir = objHeir[:-1]
-		#tempObjList.append(outObj)
-		#objHeir.append(len(objList))
-		#objList.append(object)
 		return object
 
 replaceList = ['class', 'object_id', 'data', 'type', 'object_ref']
@@ -401,25 +392,17 @@ def reformat(input):
 					output = output[:i] + output[i+1:]
 				i+=1
 		i+=1
-		
 	#output = output.replace('data : ', 'data :') #optional
 	return output
 		
 def objectify(text):
-	global offset, inMap, output, stringMode, objList, objHeir, tempObjList, unClassable, unFieldable
-	#output = text[:40] #BtWg header
-	header = 'BtWg00010001008d000016a00000000000000000'
-	#output += '{\n\t'
+	global offset, output, objList, unClassable, unFieldable, idCount
+	atoms.resetId()
 	currentSection = 0
-	#objHeir = [] #will hold the current heirarchy of objects (integer values)
 	output = [] #the array of objects that will be output
 	objList = [] #for making references
-	tempObjList = []
-	inMap	= 0
 	unClassable = 0
 	unFieldable = 0
-	stringMode = 0
-	firstClass = 0
 	textLength = len(text)
 	offset = 40
 	while offset < textLength:#textLength: #should probably use a while loop instead so it doesnt have to iterate through ignored characters
@@ -428,7 +411,6 @@ def objectify(text):
 			keyType = intConv(text[offset:offset+4])
 			offset += 4
 			if keyType == 0x0: #end of array
-				#objHeir = objHeir[:-1]
 				output.append(objList[0])
 				objid = 1
 				currentSection = 1
@@ -438,8 +420,6 @@ def objectify(text):
 				key = bigChr(text[offset:offset+keyLength])
 				offset += keyLength
 				value = parseField(text)
-				#print (objHeir[-1:][0])
-				#output[objHeir[-1:][0]].add_field(key, value)
 				objList[-1].add_field(key, value)
 			elif keyType == 0x4: #object
 				stringLength = intConv(text[offset:offset+4])
@@ -447,7 +427,6 @@ def objectify(text):
 				name = bigChr(text[offset:offset+stringLength])
 				offset += stringLength
 				objList.append(atoms.Atom(name))
-				#objHeir.append(len(objList))
 		elif currentSection == 1: #intermediary section (whitespaces)
 			if (text[offset]) == 0x0a:
 				currentSection = 2
@@ -456,16 +435,13 @@ def objectify(text):
 				offset+=1
 		elif currentSection == 2:
 			output.append(getClass(text))
-			#output.append(objList)
 	if unClassable or unFieldable:
-		print("there are " + (unClassable != 0)*(str(unClassable) + " unknown classes") + (unClassable != 0 and unFieldable != 0)*" and " + (unFieldable != 0)*(str(unFieldable) + " unknown fields") + " in this file")
+		print("there are " + (unClassable != 0)*(str(unClassable) + " unknown classes") +
+									(unClassable != 0 and unFieldable != 0)*" and " +
+									(unFieldable != 0)*(str(unFieldable) + " unknown fields") + " in this file")
 	else:
 		print("everything probably worked ok. to be honest, i'm not sure.")
-	#output.append(objList)
-	finalOutput = ''
-	for item in output: #encodes all of the objects in the output list
-		finalOutput += util.json_encode(atoms.serialize(item))
-	return header + reformat(finalOutput)
+	return output
 	#return header + finalOutput
 
 algos = {0:coords,
@@ -480,11 +456,15 @@ def magic(name, directory): #applies an algorithm to a single file (which algori
 	output = ""
 	if (device_data[42] == 0) and inputType[mode]: #not sure how to implement this yet
 		output = algos[mode](device_data)
+		finalOutput = ''
+		for item in output: #encodes all of the objects in the output list
+			finalOutput += util.json_encode(atoms.serialize(item))
+		finalOutput = 'BtWg00010001008d000016a00000000000000000' + reformat(finalOutput)
 	elif (device_data[42] == '{') and not inputType[mode]:
 		print("this file is either already converted or isn't an unreadable file")
 	else:
 		print("i don't know what kind of file this is")
-	fs.write_binary(directory + '\output\\converted ' + name, output.encode("utf-8"))
+	fs.write_binary(directory + '\output\\converted ' + name, finalOutput.encode("utf-8"))
 
 #these function calls are for test purposes
 #magic('test.bwproject', '.\devices\old devices')
