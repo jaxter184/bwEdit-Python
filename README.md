@@ -8,7 +8,10 @@ collate.py is just there for decoration.
 
 Changelog v0.5:  
 -Added viewer  
+-Added dependency: kivy  
 -Changed the way data is stored internally (thanks, stylemistake)  
+
+Everything is finally coming together. There is now a dependency that is used to make the GUI, so if you want to use the editor, you will have to install that first. [Windows intall instructions](https://kivy.org/docs/installation/installation-windows.html#install-win-dist), [OSX install instructions](https://kivy.org/docs/installation/installation-osx.html#using-homebrew-with-pip), and if you're using Linux, I'm sure you can figure it out yourself
 
 Previous changelogs:
 
@@ -49,4 +52,4 @@ Changelog v0.1:
 -Strings now support utf-16  
 
 ## Contact    
-jaxter184 [jaxter184@gmail.com]
+[jaxter184](jaxter184@gmail.com)
