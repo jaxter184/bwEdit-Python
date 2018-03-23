@@ -1,16 +1,8 @@
 import struct
 from collections import OrderedDict
-from src import tables
-from src.lib import fs
-from src.lib import util
+from src.lib.luts import tables, backupObjects, backupFields
 from src.lib import atoms
-
-mode = 3
-##:func name,	#description (allowed filetypes)
-#0:coords,		#collects the coordinates of modules in the desktop modular environment (plaintext)
-#1:settings,	#collects all field numbers used and their respective names (plaintext)
-#2:classes, 	#collects all class numbers used and their respective names (plaintext)
-#3:objectify	#converts files from unreadable to plaintext .bwdevice and .bwmodulator files (unreadable)
+import uuid
 
 types = {1:'int8',
 			2:'int16',
@@ -30,9 +22,12 @@ types = {1:'int8',
 		0x17:'float array',
 		0x19:'package ref array'
 }
-
-def parseField(text, stringType = 0):
-	global offset, output
+stringMode = 0
+endFlag = 0
+def parseField(text):
+	global offset, output, stringMode, endFlag, currentSection
+	if endFlag:
+		return ''
 	parseType = text[offset]
 	offset += 1
 	'''if parseType in types:
@@ -40,7 +35,7 @@ def parseField(text, stringType = 0):
 	else:
 		print (hex(parseType))'''
 	field = '' #output string
-	if parseType == 0x01:		#8 bit int
+	if parseType == 0x01:	#8 bit int
 		val = (text[offset])
 		if val & 0x80:
 			val -= 0x100
@@ -72,7 +67,7 @@ def parseField(text, stringType = 0):
 		offset += 8
 		return dbVal
 	elif parseType == 0x08:	#string
-		if stringType == 0:
+		if stringMode == 0:
 			stringLength = intConv(text[offset:offset+4])
 			offset += 4
 			string = ''
@@ -87,7 +82,7 @@ def parseField(text, stringType = 0):
 				if sFormat: #utf-16
 					for i in range(stringLength):
 						if (text[offset+i*2]): #if the first character is anything other than 0x00
-							string += ('\\u' + hex(intConv(text[offset+i*2:offset+i*2+2])))
+							string += chr(intConv(text[offset+i*2:offset+i*2+2]))
 						else:
 							if text[offset+i*2 + 1] == '\n':
 								string += '\\n'
@@ -101,8 +96,10 @@ def parseField(text, stringType = 0):
 							string += chr(text[offset+i])
 			offset += stringLength*(sFormat + 1)
 			return string
-		elif stringType == 1:
+		elif stringMode == 1:
 			while (text[offset]) != 0x00:
+				if endFlag:
+					break
 				field += chr(text[offset])
 				offset += 1
 			offset += 1
@@ -116,48 +113,58 @@ def parseField(text, stringType = 0):
 		offset += 4
 		out = atoms.Reference(objNum)
 		return out
-	elif parseType == 0x0d: #nested header
+	elif parseType == 0x0d: #structure										#not done yet
+		object = atoms.Atom()
 		headerLength = intConv(text[offset:offset+4])
 		offset += 4
-		field += '"'
-		print(headerLength)
-		while(headerLength > 0):
-			field += chr(text[offset])
-			offset+=1
-			headerLength-=1
-		field += '"'
+		if currentSection == 2:
+			offset += 57
+			field = intConv(text[offset:offset+headerLength])
+			offset += headerLength
+		elif headerLength<54:
+			print("short header at " + hex(offset))
+			offset += 54
+			stringMode = 1
+			field = getClass(text)
+			stringMode = 0
+		else:
+			field = intConv(text[offset:offset+headerLength])
+			offset += headerLength
 		return field
 	elif parseType == 0x12:	#object array
 		tempList = []
 		while (intConv(text[offset:offset+4]) != 0x3):
+			if endFlag:
+				break
 			tempList.append(getClass(text))
-		#print (tempList)
 		offset += 4
 		return tempList
 	elif parseType == 0x14:	#map string
 		#field += 'type : "map<string,object>",\n' + 'data :\n' + '{\n'
 		object = atoms.Atom()
+		string = ''
+		mapping = atoms.Atom()
 		parseType2 = (text[offset])
 		offset += 1
 		if parseType2 == 0x1:
 			object.add_field("type", "map<string,object>")
-		stringLength = intConv(text[offset:offset+4])
-		offset += 4
-		string = bigChr(text[offset:offset+stringLength])
-		offset += stringLength
-		mapping = atoms.Atom()
-		object.add_field("type", "map<string,object>")
-		mapping.add_field(string, getClass(text))
+			stringLength = intConv(text[offset:offset+4])
+			offset += 4
+			string = bigChr(text[offset:offset+stringLength])
+			offset += stringLength
+			mapping.add_field(string, getClass(text))
+			offset+=1
+		elif parseType2 == 0x0:
+			object.add_field("type", "map<string,object>")
+			mapping.add_field('', None)
+		else:
+			object.add_field("type", "unknown")
 		object.add_field("data", mapping)
-		offset+=1
 		return object
-	elif parseType == 0x15:	#16 character hex value
-		for i in range(16):
-			if i in [4,6,8,10]:
-				field += '-'
-			field += "{0:0{1}x}".format((text[offset+i]),2) #includes leading zeros
+	elif parseType == 0x15:	#UUID
+		value = str(uuid.UUID(bytes=text[offset:offset+16]))
 		offset += 16
-		return field
+		return value
 	elif parseType == 0x16:	#color
 		flVals = []
 		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
@@ -174,107 +181,89 @@ def parseField(text, stringType = 0):
 		offset += 4
 		offset += arrayLength*4
 		return field
-	elif parseType == 0x19: #package reference array
+	elif parseType == 0x19: #string array
 		arrayLength = intConv(text[offset:offset+4])
 		offset += 4
-		field += '['
+		arr = []
 		for i in range(arrayLength):
-			field += (chr(text[offset+i])) + ', '
-		if arrayLength:
-			field = field[:-2]
-		field += ']'
-		offset += arrayLength
+			strLength = intConv(text[offset:offset+4])
+			offset += 4
+			arr.append(text[offset:offset+strLength].decode("utf-8"))
+			offset+=strLength
+		return arr
+	elif parseType == 0x1a: #fuck if i know								#not done yet
+		#print("shit,1a ")
+		strLength = 0
+		while (text[offset] == 0x00):
+			strLength = intConv(text[offset:offset+4])
+			offset += 4
+			if strLength  == 0x90:
+				return ''
+		field = text[offset:offset+strLength].decode("utf-8")
+		offset += strLength
 		return field
+		
 	else:
+		endFlag = 1
 		print('unknown type at ' + hex(offset-1) + ', ' + str(parseType))
-		return ''
+		return 'end here'
 
 def bigOrd(text):
-    output = 0
-    for i in range(len(text)):
-        #print(len(text)-i - 1)
-        output += (256**(len(text)-i - 1))*(text[i])
-    return output
+	output = 0
+	for i in range(len(text)):
+		#print(len(text)-i - 1)
+		output += (256**(len(text)-i - 1))*(text[i])
+	return output
 
 def bigChr(chain):
-    output = ''
-    for i in range(len(chain)):
-        #print(len(text)-i - 1)
-        output += chr(chain[i])
-    return output
+	output = ''
+	for i in range(len(chain)):
+		#print(len(text)-i - 1)
+		output += chr(chain[i])
+	return output
 	 
 def intConv(chain):
-    output = 0
-    for i in range(len(chain)):
-        #print(len(chain)-i - 1)
-        output += (256**(len(chain)-i - 1))*chain[i]
-    return output
-	 
-def coords(text):
-	output = ""
-	lastStart = 0
-	isX = 0
-	findComma = 0
-	for pick in range(14, len(text)):
-		if bigChr(text[pick - 10:pick]) == '\"x(17)\" : ':
-			lastStart = pick
-			isX = 1
-			findComma = 1
-		if bigChr(text[pick - 10:pick]) == '\"y(18)\" : ':
-			lastStart = pick
-			isX = 0
-			findComma = 1
-		if bigChr(text[pick - 14:pick]) == '\"name(374)\" : ':
-			lastStart = pick
-			isX = 0
-			findComma = 1
-		if bigChr(findComma and (text[pick]) == ','):
-			if isX:
-				 output += '\n'
+	output = 0
+	for i in range(len(chain)):
+		#print(len(chain)-i - 1)
+		output += (256**(len(chain)-i - 1))*chain[i]
+	return output
+
+def getParams(text, object):
+	global offset, output, stringMode, unClassable, unFieldable, endFlag
+	fieldNum = intConv(text[offset:offset+4])
+	offset += 4
+	#print (fieldNum)
+	while (fieldNum):
+		if endFlag:
+			break
+		#print("field: " + hex(offset-4))
+		fieldName = ''
+		value = 'placeholder'
+		if fieldNum > 10:
+			if fieldNum in tables.params:
+				fieldName = tables.params[fieldNum] +  '(' + str(fieldNum) + ')'
+			if fieldNum in backupFields.bparams:
+				fieldName = backupFields.bparams[fieldNum] +  '(' + str(fieldNum) + ')'
 			else:
-				 output += ','
-			findComma = 0
-			output += bigChr(text[lastStart:pick])
-	return output[1:]
-	 
-def settings(text):
-	output = ""
-	for pick in range(len(text)-5):
-		if bigChr(text[pick:pick + 5]) == ')\" : ':
-			preIndex = 0
-			while bigChr(text[pick - preIndex]) != '(':
-				 preIndex += 1
-			number = bigChr(text[pick-preIndex + 1:pick])
-			pIndexNum = preIndex
-			while chr(text[pick - preIndex]) != '\"':
-				 preIndex += 1
-			parameter = bigChr(text[pick-preIndex + 1:pick-pIndexNum])
-			output += '\n' + number + ',' + parameter
-	return output[1:]
-
-def classes(text):
-	output = ""
-	for pick in range(len(text)):
-		if pick > 100:
-			if text[pick-9:pick] == 'class : \"':
-				preIndex = 0
-				while text[pick + preIndex] != '(':
-				  preIndex += 1
-				parameter = text[pick:pick + preIndex]
-				'''if parameter[:11] == 'float_core.':
-				  parameter = parameter[11:]
-				if parameter[:19] == 'float_common_atoms.':
-				  parameter = parameter[19:]'''
-				pIndexNum = preIndex
-				while text[pick + preIndex] != ')':
-				  preIndex += 1
-				number = text[pick+pIndexNum + 1:pick+preIndex]
-				output += '\n' + number + ',' + parameter
-				#print(parameter)
-	return output[1:]
-
+				fieldName = "missing_field" +  '(' + str(fieldNum) + ')'
+				unFieldable += 1
+			value = parseField(text)
+		else:
+			print("weird field detected at " + hex(offset))
+			fieldName = text[offset:offset+fieldNum].decode()
+			offset += fieldNum
+			value = atoms.Atom(fieldName)
+			getParams(text, value)
+		object.add_field(fieldName, value)
+		fieldNum = intConv(text[offset:offset+4])
+		offset += 4
+	return
+	
 def getClass(text):
-	global offset, output, stringMode, unClassable, unFieldable
+	global offset, output, stringMode, unClassable, unFieldable, endFlag
+	if endFlag:
+		return ''
 	#print("pos: " + hex(offset))
 	classNum = intConv(text[offset:offset+4])
 	offset += 4
@@ -286,25 +275,13 @@ def getClass(text):
 		objName = ''
 		if classNum in tables.objs:
 			objName = tables.objs[classNum] + '(' + str(classNum) + ')'
+		elif classNum in backupObjects.bobjs:
+			objName = backupObjects.bobjs[classNum] + '(' + str(classNum) + ')'
 		else:
 			objName = "missing_class" + '(' + str(classNum) + ')'
 			unClassable += 1
 		object = atoms.Atom(objName)
-		fieldNum = intConv(text[offset:offset+4])
-		offset += 4
-		#print (fieldNum)
-		while (fieldNum):
-			#print("field: " + hex(offset-4))
-			fieldName = ''
-			if fieldNum in tables.params:
-				fieldName = tables.params[fieldNum] +  '(' + str(fieldNum) + ')'
-			else:
-				fieldName = "missing_field" +  '(' + str(fieldNum) + ')'
-				unFieldable += 1
-			value = parseField(text)
-			object.add_field(fieldName, value)
-			fieldNum = intConv(text[offset:offset+4])
-			offset += 4
+		getParams(text, object)
 		#print ("broke out of object")
 		return object
 
@@ -395,8 +372,10 @@ def reformat(input):
 	#output = output.replace('data : ', 'data :') #optional
 	return output
 		
-def objectify(text):
-	global offset, output, objList, unClassable, unFieldable, idCount
+def bwDecode(text):
+	global offset, output, objList, unClassable, unFieldable, idCount, endFlag, currentSection
+	if endFlag:
+		return ''
 	atoms.resetId()
 	currentSection = 0
 	output = [] #the array of objects that will be output
@@ -405,8 +384,10 @@ def objectify(text):
 	unFieldable = 0
 	textLength = len(text)
 	offset = 40
-	while offset < textLength:#textLength: #should probably use a while loop instead so it doesnt have to iterate through ignored characters
+	while offset < textLength:
 		#print('p')
+		if endFlag:
+			break
 		if currentSection == 0: #getting the header info
 			keyType = intConv(text[offset:offset+4])
 			offset += 4
@@ -429,6 +410,7 @@ def objectify(text):
 				objList.append(atoms.Atom(name))
 		elif currentSection == 1: #intermediary section (whitespaces)
 			if (text[offset]) == 0x0a:
+				#print(output[0])
 				currentSection = 2
 				offset+=1
 			else:
@@ -442,31 +424,3 @@ def objectify(text):
 	else:
 		print("everything probably worked ok. to be honest, i'm not sure.")
 	return output
-	#return header + finalOutput
-
-algos = {0:coords,
-			1:settings,
-			2:classes,
-			3:objectify
-}
-inputType = [0,0,0,1,1]
-
-def magic(name, directory): #applies an algorithm to a single file (which algorithm it is is based on the 'mode' variable)
-	device_data = fs.read_binary(directory + '\\' + name)
-	output = ""
-	if (device_data[42] == 0) and inputType[mode]: #not sure how to implement this yet
-		output = algos[mode](device_data)
-		finalOutput = ''
-		for item in output: #encodes all of the objects in the output list
-			finalOutput += util.json_encode(atoms.serialize(item))
-		finalOutput = 'BtWg00010001008d000016a00000000000000000' + reformat(finalOutput)
-	elif (device_data[42] == '{') and not inputType[mode]:
-		print("this file is either already converted or isn't an unreadable file")
-	else:
-		print("i don't know what kind of file this is")
-	fs.write_binary(directory + '\output\\converted ' + name, finalOutput.encode("utf-8"))
-
-#these function calls are for test purposes
-#magic('test.bwproject', '.\devices\old devices')
-#magic('Amp.bwdevice', '.\devices\old devices')
-#print('decoder imported')

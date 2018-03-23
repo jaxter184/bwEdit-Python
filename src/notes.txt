@@ -1,0 +1,16 @@
+Extract every class
+classDict:{classNum:class}
+class:orderedDict[field:type]
+
+class:
+field1
+field2
+etc
+{
+###:[###,###,###],
+}
+
+field: type
+{
+###: #,
+}
