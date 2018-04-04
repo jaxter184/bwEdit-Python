@@ -103,7 +103,7 @@ def parseField():
 			strLength = intConv(text[offset:offset+4])
 			offset += 4
 			if strLength  == 0x90:
-				return ''
+				return
 		offset += strLength
 	else:
 		endFlag = 1
@@ -141,7 +141,9 @@ def addField(fieldName):
 		fieldList[fieldName] = fieldType
 	else:
 		if fieldType and fieldList[fieldName] != fieldType:
-			print("somethings wrong. oopsie woopsie fucky wucky code is \'different fields\'")
+			print(fieldType)
+			print(type(fieldList[fieldName]))
+			print("somethings wrong. oopsie woopsie fucky wucky code is \'different encoder fields\'")
 			#print(str(fieldList[fieldName]) + ', ' + str(fieldType))
 
 def getParams():

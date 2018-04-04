@@ -1,12 +1,13 @@
 import os
 from src import decoder, encoder, extractor
 from src.lib import fs, util, atoms
+from src.lib.luts import typeLists
 
 root_dir = '.\devices'
 folder = {0:'.\devices',
 			 1:'.\devices\old devices'}
 
-classExtract = 0 #change this to 0 for regular operation and 1 for class extraction. most users won't need class extraction, as it is just a tool I use to make internal files
+classExtract = 1 #change this to 0 for regular operation and 1 for class extraction. most users won't need class extraction, as it is just a tool I use to make internal files
 			 
 def magic(name, directory): #decodes then reencodes a single file
 	global extractedClasses, extractedFields
@@ -38,10 +39,22 @@ def magic(name, directory): #decodes then reencodes a single file
 	else:
 		print("i don't know what kind of file this is")
 
+def x_in_y(query, base):
+    try:
+        l = len(query)
+    except TypeError:
+        l = 1
+        query = type(base)((query,))
+
+    for i in range(len(base)):
+        if base[i:i+l] == query:
+            return True
+    return False
+
 def extractClasses():
 	global extractedClasses, extractedFields
-	collatedClassDict = {}
-	collatedFieldDict = {}
+	collatedClassDict = typeLists.classList
+	collatedFieldDict = typeLists.fieldList
 	#collatedClassListErrors = {}
 	for eachFile in extractedClasses:
 		for eachClass in eachFile:
@@ -50,10 +63,16 @@ def extractClasses():
 				#diffkeys = [k for k in collatedClassDict[eachClass] if collatedClassDict[eachClass][k] != eachFile[k]]
 				#if diffkeys:
 				if collatedClassDict[eachClass] != eachFile[eachClass]:
-					print("oopsie woopsie fucky wucky code is \'different classes in main\'")
-					print(collatedClassDict[eachClass])
-					print(eachFile[eachClass])
-					#collatedClassListErrors[eachClass] = (eachFile[eachClass])
+					if set(eachFile[eachClass])>set(collatedClassDict[eachClass]):
+						collatedClassDict[eachClass] = eachFile[eachClass]
+					elif set(eachFile[eachClass])<set(collatedClassDict[eachClass]):
+						eachFile[eachClass] = collatedClassDict[eachClass]
+					if collatedClassDict[eachClass] != eachFile[eachClass]:
+						print("oopsie woopsie fucky wucky code is \'conflicting class\'")
+						print(eachClass)
+						print(collatedClassDict[eachClass])
+						print(eachFile[eachClass])
+						#collatedClassListErrors[eachClass] = (eachFile[eachClass])
 			else:
 				#print(eachFile[eachClass])
 				collatedClassDict[eachClass] = (eachFile[eachClass])
@@ -69,7 +88,7 @@ def extractClasses():
 					elif eachFile[eachField] == None:
 						eachFile[eachField] = collatedFieldDict[eachField]
 					if collatedFieldDict[eachField] != eachFile[eachField]:
-						print("oopsie woopsie fucky wucky code is \'different fields in main\'")
+						print("oopsie woopsie fucky wucky code is \'conflicting field\'")
 						print(collatedFieldDict[eachField])
 						print(eachFile[eachField])
 						#collatedClassListErrors[eachField] = (eachFile[eachField])
@@ -96,11 +115,11 @@ extractedClasses = []
 extractedFields = []
 #print(inputDir)
 for file in os.listdir(inputDir):
-	if file.endswith((".bwdevice",".bwmodulator",".bwpreset",".bwclip",".bwscene",".bwremotecontrols")):
+	if file.endswith((".bwdevice",".bwmodulator",".bwpreset",".bwclip",".bwscene",".bwremotecontrols",".bwproject")):
 		print ('-'+file)
-		if file != "Phase-4.bwdevice": continue #use this to isolate a file
+		#if file != "Phase-4.bwdevice": continue #use this to isolate a file
 		magic(file, inputDir)
-	elif file.endswith(".bwproject"):
+	elif file.endswith('poop',):
 		print ('*skipping '+file)
 if classExtract:
 	extractClasses()

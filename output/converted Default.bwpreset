@@ -1,0 +1,116 @@
+BtWg000100010084000016180000000000000000{
+	"class" : "meta",
+	"object_id" : 1,
+	"data" : {
+		"application_version_name" : "none",
+		"branch" : "claes/future",
+		"comment" : "",
+		"creator" : "",
+		"device_category" : "Dynamics",
+		"device_creator" : "Bitwig",
+		"device_id" : "8750db61-e9d3-4d0e-a610-e734006a64dc",
+		"device_name" : "De-Esser",
+		"device_type" : "audio_to_audio",
+		"preset_category" : "",
+		"referenced_device_ids" : [
+			"8750db61-e9d3-4d0e-a610-e734006a64dc"
+		],
+		"referenced_packaged_file_ids" : [],
+		"revision_id" : "5c653a6aee29028d30e099b5deba4a0000af2c2c",
+		"revision_no" : 43266,
+		"tags" : "",
+		"type" : "application/bitwig-preset"
+	}
+}
+{
+	"class" : "preset_document(1377)",
+	"object_id" : 1,
+	"data" : {
+		"has_attached_files(5155)" : false,
+		"has_attached_plugin_state_files(5386)" : false,
+		"preset(5153)" : {
+			"class" : "native_device_preset(64)",
+			"object_id" : 2,
+			"data" : {
+				"identifier(697)" : "",
+				"preset_name(4830)" : "",
+				"device_name(154)" : "De-Esser",
+				"user_device_name(5465)" : "",
+				"device_creator(155)" : "Bitwig",
+				"device_category(156)" : "Dynamics",
+				"creator(158)" : "",
+				"comment(159)" : "",
+				"preset_category(161)" : "",
+				"keywords(162)" : "",
+				"enabled(163)" : true,
+				"device_type(157)" : 0,
+				"active(4990)" : true,
+				"modulator_grid(6389)" : {
+					"class" : "modulator_grid_preset(1887)",
+					"object_id" : 3,
+					"data" : {
+						"identifier(697)" : "MODULATORS",
+						"auxiliary_devices(6726)" : []
+					}
+				},
+				"remote_controls_preset_pages(6789)" : {
+					"class" : "remote_controls_page_group_preset(1917)",
+					"object_id" : 4,
+					"data" : {
+						"pages(6782)" : []
+					}
+				},
+				"browsing_session_state(6093)" : null,
+				"device_preset_identifier_path_conversions(6469)" : [],
+				"is_expanded(6796)" : true,
+				"are_remote_controls_visible(6797)" : false,
+				"are_modulators_visible(6825)" : false,
+				"packaged_device_file_id(3326)" : "",
+				"device_UUID(153)" : "8750db61-e9d3-4d0e-a610-e734006a64dc",
+				"contents(164)" : {
+					"class" : "float_core.generic_module_preset(211)",
+					"object_id" : 5,
+					"data" : {
+						"identifier(697)" : "CONTENTS",
+						"child_presets(524)" : [
+							{
+								"class" : "float_core.decimal_value_atom_preset(133)",
+								"object_id" : 6,
+								"data" : {
+									"identifier(697)" : "FREQ",
+									"value(310)" : 111.0
+								}
+							},
+							{
+								"class" : "float_core.decimal_value_atom_preset(133)",
+								"object_id" : 7,
+								"data" : {
+									"identifier(697)" : "AMOUNT",
+									"value(310)" : 1.0
+								}
+							},
+							{
+								"class" : "float_core.boolean_value_atom_preset(127)",
+								"object_id" : 8,
+								"data" : {
+									"identifier(697)" : "MONITOR",
+									"value(303)" : false
+								}
+							},
+							{
+								"class" : "float_core.indexed_value_atom_preset(247)",
+								"object_id" : 9,
+								"data" : {
+									"identifier(697)" : "",
+									"value(627)" : 11,
+									"is_legacy_preset_with_index_as_value(2003)" : false
+								}
+							}
+						]
+					}
+				}
+			}
+		},
+		"file_references(5154)" : []
+	}
+}
