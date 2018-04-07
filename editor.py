@@ -66,7 +66,7 @@ class Application(tk.Tk):
 		print ('-'+filename)
 		tk.Tk.wm_title(self, filename)
 		with open(filename, 'rb') as readThis:
-			f = decoder.objectify(readThis.read())
+			f = decoder.bwDecode(readThis.read())
 		self.frames[MainPage].editor.load(f)
 
 class EditorCanvas(tk.Frame):
