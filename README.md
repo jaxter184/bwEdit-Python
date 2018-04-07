@@ -1,19 +1,30 @@
-# bwConvert
-Python scripts for editing Bitwig files
-To use, just put some Bitwig files (.bwmodulator, .bwdevice, .bwclip, .bwpreset) somewhere in the folder and run the convert.py script. Outputs will be in the output folder, because I'm a very creative namer.  
-To use the editor (read: viewer), put a .bwdevice or .bwmodulator in the same location and run editor.py
+# bwEdit
+Python3-based GUI application for editing Bitwig files  
+To use the editor, just run 'editor.py' and load a file from anywhere on your computer.  
+To use the converter, put items in the 'input' folder and run 'convert.py'. Outputs will show up in a folder labelled 'output'.  
 collate.py is just there for decoration.
 
+Editor commands:
+-Click an atom to view its data  
+-Click an atom's node to start a connection, then click a different atom's corresponding node to complete the connection  
+-Click a connection to delete it  
+-Drag an atom to move it around
+
 ## Changelogs  
+
+Changelog v0.6.0:  
+-Added editor  
+-Removed viewer  
+-Removed dependency: kivy
+
+Lots of new stuff and I'm too lazy to put it into a changelog. Basically, this project is now a node editor. Can't export yet, though.
+
+Previous changelogs:
 
 Changelog v0.5:  
 -Added viewer  
 -Added dependency: kivy  
 -Changed the way data is stored internally (thanks, stylemistake)  
-
-Everything is finally coming together. There is now a dependency that is used to make the GUI, so if you want to use the editor, you will have to install that first. [Windows intall instructions](https://kivy.org/docs/installation/installation-windows.html#install-win-dist), [OSX install instructions](https://kivy.org/docs/installation/installation-osx.html#using-homebrew-with-pip), and if you're using Linux, I'm sure you can figure it out yourself
-
-Previous changelogs:
 
 Changelog v0.4:  
 -Upgraded to Python 3.6  
