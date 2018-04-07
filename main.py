@@ -7,7 +7,7 @@ root_dir = '.\devices'
 folder = {0:'.\devices',
 			 1:'.\devices\old devices'}
 
-classExtract = 1 #change this to 0 for regular operation and 1 for class extraction. most users won't need class extraction, as it is just a tool I use to make internal files
+classExtract = 0 #change this to 0 for regular operation and 1 for class extraction. most users won't need class extraction, as it is just a tool I use to make internal files
 			 
 def magic(name, directory): #decodes then reencodes a single file
 	global extractedClasses, extractedFields

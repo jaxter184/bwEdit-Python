@@ -3,7 +3,8 @@ import random
 from tkinter import ttk
 from tkinter import filedialog
 from src import decoder
-from src.nodes import nodes
+from src.lib import fs, util, atoms
+from src.lib.luts import nodes
 from src.nitro import nitro
 import os
 MED_FONT = ("Verdana", 9)
@@ -20,6 +21,7 @@ BORDER = 6
 NODECOL = "#fff"
 BASECOL = "#414141"
 ACCCOL1 = "#535353"
+INSP_WIDTH = 50
 
 class Application(tk.Tk):
 	def __init__(self, *args, **kwargs):
@@ -31,14 +33,14 @@ class Application(tk.Tk):
 		top = self.winfo_toplevel() #menu bar
 		self.menuBar = tk.Menu(top)
 		top['menu'] = self.menuBar
-		self.subMenu = tk.Menu(self.menuBar, tearoff=0) #
+		self.subMenu = tk.Menu(self.menuBar, tearoff=0) #file
 		self.menuBar.add_cascade(label='File', menu=self.subMenu)
 		self.subMenu.add_command(label='Save',)
 		self.subMenu.add_command(label='Load', command=self.openfile)
 		self.subMenu.add_command(label='Other',)
 		self.subMenu.add_separator()
 		self.subMenu.add_command(label='Exit',)
-		self.subMenu = tk.Menu(self.menuBar, tearoff=0) #
+		self.subMenu = tk.Menu(self.menuBar, tearoff=0) #help
 		self.menuBar.add_cascade(label='Help', menu=self.subMenu)
 		self.subMenu.add_command(label='About',)
 		self.file = ''
@@ -73,8 +75,9 @@ class EditorCanvas(tk.Frame):
 	def __init__(self, parent):
 		tk.Frame.__init__(self, parent)
 		self.data=0
+		self.data_info = {}
 
-		self.canvas = tk.Canvas(width=1440, height=1440,scrollregion=(0,0,4000,3000), bg = "#2e2e2e")
+		self.canvas = tk.Canvas(self, bg = "#2e2e2e")
 		self.hbar=tk.Scrollbar(self,orient='horizontal')
 		self.hbar.pack(side='bottom',fill='x')
 		self.hbar.config(command=self.canvas.xview)
@@ -83,6 +86,8 @@ class EditorCanvas(tk.Frame):
 		self.vbar.config(command=self.canvas.yview)
 		self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set)
 		self.canvas.pack(side = 'left', fill="both", expand=True)
+		self.update()
+		self.canvas.config(scrollregion=self.canvas.bbox("all"))
 		
 		#self.canvas.create_oval(0,0,10,10, activeoutline = "black" , outline=NODECOL, fill=NODECOL ,tags=("poop"))
 		# this data is used to keep track of an 
@@ -92,6 +97,8 @@ class EditorCanvas(tk.Frame):
 		self._selected = ''
 		self._currentlyConnecting = False
 		self.size = 12
+		self._dragged = False
+		self._inspector_active = False
 		
 		self.canvas.tag_bind("case||name||deco", "<ButtonPress-1>", self.on_token_press)
 		self.canvas.tag_bind("case||name||deco", "<ButtonRelease-1>", self.on_token_release)
@@ -99,18 +106,7 @@ class EditorCanvas(tk.Frame):
 		self.canvas.tag_bind("port", "<ButtonPress-1>", self.on_port_press)
 		self.canvas.tag_bind("conn", "<ButtonPress-1>", self.delete_line)
 		self.canvas.bind("<Motion>", self.on_move)
-	
-	def delete_line(self, event):
-		tags = self.canvas.gettags(*self.canvas.find_closest(event.x, event.y))
-		if tags[1][:4] == "line":
-			lineIndex = tags[1][4:]
-			self.canvas.delete(tags[1])
-			for i in range(self.size):
-				if tags[1] in self.adjList[i]:
-					for j in range(self.size):
-						if self.adjList[i][j] == tags[1]:
-							self.adjList[i][j] = None
-							return
+		self.canvas.bind("<ButtonPress-1>", self.on_click)
 	
 	def _add_connections(self):
 		for i in range(self.size):
@@ -130,6 +126,34 @@ class EditorCanvas(tk.Frame):
 					dist = min(abs(fr[2] - to[0])/4,75) #for curvature
 					self.canvas.tag_lower(self.canvas.create_line(inport[0], inport[1], inport[0]+dist, inport[1], outport[0]-dist, outport[1], outport[0], outport[1], activefill = "white", width = LINE_WID, fill = LINE_COL, tags=("grapheditor", self.adjList[i][j], "conn"), smooth = True))
 
+	def _draw_inspector(self, eX,eY):
+		if self._inspector_active:
+			self.canvas.delete("inspector")
+		self._inspector_active = True
+		x,y = self.canvas.canvasx(eX), self.canvas.canvasy(eY)
+		id = int(self._drag_data["item"][2:])
+		self.canvas.create_rectangle(x, y, x+10, y+10, outline=LINE_COL, fill=BASECOL, tags=("grapheditor","id"+str(id), "4pt", "case", "inspector"))
+		numFields = 0
+		fieldText = []
+		maxWidth = 5
+		for fields in self.data_info[id].fields:
+			field = self.data_info[id].fields[fields]
+			if type(field) in (int, str, float):
+				text = fields + ": " + str(field)
+			elif type(field) in (None,):
+				text = fields + ": None"
+			else:
+				text = fields + ": <Atom>"
+			canvasText = self.canvas.create_text(x+BORDER,y+BORDER+MED_FONT[1]*2*numFields+MED_FONT[1],fill="white",font=MED_FONT, text=text, anchor="w", tags=("grapheditor","id"+str(id), "2pt", "name", "inspector"))
+			textBounds = self.canvas.bbox(canvasText)
+			maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
+			numFields += 1
+		c= self.canvas.coords("case&&inspector")
+		self.canvas.coords("case&&inspector", c[0], c[1], x+maxWidth+BORDER*2, y+numFields*2*MED_FONT[1] + BORDER + MED_FONT[1])
+		print(id)
+		print(self.data_info[id])
+		
+
 	def _draw_atom(self, obj):
 		id = obj.id
 		#print("id:",id)
@@ -146,26 +170,26 @@ class EditorCanvas(tk.Frame):
 			name = obj.fields["name(374)"]
 			val = obj.fields["value_type(702)"].fields["default_value(891)"]
 			w,h = 4*b + 8*len(name),32+4*b+MED_FONT[1]
-			self.makeRect(className, x, y, name, id, w=w, h=h)
+			self.makeRect(className, x, y, id, name=name, w=w, h=h)
 			self.canvas.create_rectangle(x+b, y+3*b+MED_FONT[1], x+w-b, y+h-b , outline="#888", fill="#888", tags=("grapheditor","id"+str(id), "4pt", "deco"))
 			#self.canvas.create_text(x+b+DOT_SIZE,y+b,fill="white",font=MED_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val)[:7], anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.canvas.create_text(x+b+DOT_SIZE,y+(2*b+MED_FONT[1]+h)/2,fill="white",font=THK_FONT, text=str(val)[:7], anchor="w", tags=("grapheditor","id"+str(id), "2pt", "value"))
 		elif className == 'float_core.boolean_value_atom(87)':
 			name = obj.fields["name(374)"]
 			val = obj.fields["value_type(702)"].fields["default_value(6957)"]
 			w,h = 4*b + 8*len(name),32+4*b+MED_FONT[1]
-			self.makeRect(className, x, y, name, id, w=w, h=h)
+			self.makeRect(className, x, y, id, name=name, w=w, h=h)
 			self.canvas.create_rectangle(x+b, y+3*b+MED_FONT[1], x+w-b, y+h-b , outline="#888", fill="#888", tags=("grapheditor","id"+str(id), "4pt", "deco"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.canvas.create_text(x+b+DOT_SIZE,y+(2*b+MED_FONT[1]+h)/2,fill="white",font=THK_FONT, text=str(val), anchor="w", tags=("grapheditor","id"+str(id), "2pt", "value"))
 		elif className == 'float_core.indexed_value_atom(180)':
 			name = obj.fields["name(374)"]
-			val = obj.fields["value_type(702)"].fields["items(393)"][0]
+			val = obj.fields["value_type(702)"].fields["items(393)"][0].fields["name(651)"]
 			vals = obj.fields["value_type(702)"].fields["items(393)"]
 			(w,h) = (4*b + 8*len(name),50+MED_FONT[1])
 			self.canvas.create_rectangle(x, y, x+w, y+h, activeoutline = "white" , outline="#888", fill="#888", tags=("grapheditor","id"+str(id), "4pt", "case"))
 			self.canvas.create_rectangle(x+b, y+3*b+MED_FONT[1], x+w-b, y+h-b , outline="#aaa", fill="#aaa", tags=("grapheditor","id"+str(id), "4pt", "deco"))
 			self.canvas.create_text(x+b+DOT_SIZE,y+b,fill="white",font=MED_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.canvas.create_text(x+b+DOT_SIZE,y+(2*b+MED_FONT[1]+h)/2,fill="white",font=THK_FONT, text=str(val), anchor="w", tags=("grapheditor","id"+str(id), "2pt", "value"))
 			nodesI = nodes.list[className]['i']
 			nodesO = nodes.list[className]['o']
 			#dropdown = DropDown()
@@ -178,20 +202,20 @@ class EditorCanvas(tk.Frame):
 		elif className == 'float_core.integer_value_atom(394)':
 			name = obj.fields["name(374)"]
 			val = obj.fields["value_type(702)"].fields["default_value(6956)"]
-			self.makeRect(className, x, y, name, id, w=4*b + 8*len(name), h=50+MED_FONT[1])
+			self.makeRect(className, x, y, id, name=name, w=4*b + 8*len(name), h=50+MED_FONT[1])
 			self.canvas.create_rectangle(x+b, y+3*b+MED_FONT[1], x+w-b, y+h-b , outline="#aaa", fill="#aaa", tags=("grapheditor","id"+str(id), "4pt", "deco"))
 			#self.canvas.create_text(x+b+DOT_SIZE,y+b,fill="white",font=MED_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.canvas.create_text(x+b+DOT_SIZE,y+(2*b+MED_FONT[1]+h)/2,fill="white",font=THK_FONT, text=str(val), anchor="w", tags=("grapheditor","id"+str(id), "2pt", "value"))
 		elif className == 'float_common_atoms.constant_value_atom(314)':
 			val = str(obj.fields["constant_value(750)"])[:5]
-			self.makeRect(className, x, y, 'Const', id, h=50+MED_FONT[1])
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw",
+			self.makeRect(className, x, y, id, h=50+MED_FONT[1])
+			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 		elif className == 'float_common_atoms.constant_integer_value_atom(298)':
 			val = str(obj.fields["constant_value(720)"])
-			self.makeRect(className, x, y, 'Const', id, h=50+MED_FONT[1])
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw",
+			self.makeRect(className, x, y, id, h=50+MED_FONT[1])
+			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 
@@ -217,16 +241,8 @@ class EditorCanvas(tk.Frame):
 											tags=("grapheditor","id"+str(id), "2pt", "name"))
 			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=CODEFONT, text=str(val), anchor="nw",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
-		elif className == 'float_common_atoms.mix_atom(301)':
-			name = 'MIX'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
-		elif className == 'float_common_atoms.polyphonic_note_voice_atom(350)':
-			name = 'PolyNoteVoice'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
 		elif className == 'float_common_atoms.note_delay_compensation_atom(1435)':
-			self.makeRect(className, x, y, '', id)
+			self.makeRect(className, x, y, id)
 			
 			self.canvas.create_oval(x+9,y+10,x+23,y+24, outline="#FAA", fill="#FAA",
 											tags=("grapheditor", "id"+str(id), "4pt", "deco"))
@@ -236,7 +252,7 @@ class EditorCanvas(tk.Frame):
 											tags=("grapheditor", "id"+str(id), "4pt", "deco"))
 			return
 		elif className == 'float_common_atoms.delay_compensation_atom(1371)':
-			self.makeRect(className, x, y, '', id)
+			self.makeRect(className, x, y, id)
 			
 			self.canvas.create_oval(x+9,y+10,x+23,y+24, outline="#FFF", fill="#FFF",
 											tags=("grapheditor", "id"+str(id), "4pt", "deco"))
@@ -248,16 +264,12 @@ class EditorCanvas(tk.Frame):
 		elif className == 'float_core.modulation_source_atom(766)':
 			name = obj.fields["name(3639)"] + '\no->'
 			(w,h) = (15 + 6*(len(name)-4),50+MED_FONT[1])
-			self.makeRect(className, x, y, name, id, w=w, h=h)
+			self.makeRect(className, x, y, id, name, w=w, h=h)
 		elif className == 'float_core.value_led_atom(189)':
 			self.makeRect(className, x, y, '', id)
 			w,h = nodes.list[className]['w'],nodes.list[className]['h']
 			self.canvas.create_rectangle(x+b, y+b, x+w-b, y+h-b , outline="#ed5", fill="#ed5",
 													tags=("grapheditor","id"+str(id), "4pt", "deco"))
-			return
-		elif className == 'float_core.vu_meter_atom(40)':
-			name = 'VUMeter'
-			self.makeRect(className, x, y, name, id)
 			return
 
 		#other atoms
@@ -267,18 +279,10 @@ class EditorCanvas(tk.Frame):
 			val2 = obj.fields["comparison_value(843)"]
 			(w,h) = (4*b + 8*len(name),50+MED_FONT[1])
 			self.makeRect(className, x, y, name, id, w=w, h=h)
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val1), anchor="nw",
+			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val1), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+2*MED_FONT[1],fill="white",font=THK_FONT, text=str(val2), anchor="nw",
+			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+2*MED_FONT[1],fill="white",font=THK_FONT, text=str(val2), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
-		elif className == 'float_common_atoms.multiplexer_atom(1188)':
-			name = 'MUX'
-			val = obj.fields["inputs(4763)"]
-			self.makeRect(className, x, y, name, id, vertical = True)
-		elif className == 'float_common_atoms.deinterleave_atom(368)':
-			name = 'L/R'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
 		elif className == 'float_common_atoms.indexed_lookup_table_atom(344)':
 			name = 'lookup'
 			vals = obj.fields["row_data(744)"]
@@ -288,109 +292,60 @@ class EditorCanvas(tk.Frame):
 				name += str(vals[i].fields["cells(726)"][0].fields["value(739)"]) + '|'
 			width = 6*(len(name)-6)
 			print("dothis.editor.238934")
-		elif className == 'float_common_atoms.audio_switcher_atom(401)':
-			name = 'AudioSW'
-			self.makeRect(className, x, y, name, id, vertical = True)
-		elif className == 'float_common_atoms.envelope_follower_atom(300)':
-			self.makeRect(className, x, y, '', id)
-			name = 'EnvFollow'
-			self.canvas.create_rectangle(x+b, y+b, x+w-b, y+h-b , outline="#aaa", fill="#aaa",
-													tags=("grapheditor","id"+str(id), "4pt", "deco"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+2*b,fill="white",font=THK_FONT, text=name, anchor="nw",
-											tags=("grapheditor","id"+str(id), "2pt", "name"))
-			return
-		elif className == 'float_common_atoms.stereo_width_atom(297)':
-			name = 'Width'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
-		elif className == 'float_core.oscilloscope_atom(1654)':
-			name = 'OScope'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
 
 		#math
 		elif className == 'float_common_atoms.constant_add_atom(308)':
-			name = '+'
-			self.makeRect(className, x, y, name, id)
+			self.makeRect(className, x, y, id)
 			val = obj.fields["constant_value(750)"]
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw",
+			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 		elif className == 'float_common_atoms.constant_multiply_atom(303)':
-			name = 'x'
-			self.makeRect(className, x, y, name, id)
+			self.makeRect(className, x, y, id)
 			val = obj.fields["constant_value(750)"]
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="nw",
+			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
-		elif className == 'float_common_atoms.add_atom(337)':
-			name = '+'
-			self.makeRect(className, x, y, name, id)
-			return
-		elif className == 'float_common_atoms.multiply_atom(367)':
-			name = 'x'
-			self.makeRect(className, x, y, name, id)
-			return
-		elif className == 'float_common_atoms.subtract_atom(343)':
-			name = '-'
-			self.makeRect(className, x, y, name, id)
-			return
-		elif className == 'float_common_atoms.tanh_atom(345)':
-			name = 'tanh'
-			self.makeRect(className, x, y, name, id)
-			return
-		elif className == 'float_common_atoms.min_atom(348)':
-			name = 'min'
-			self.makeRect(className, x, y, name, id)
-			return
-		elif className == 'float_common_atoms.max_atom(352)':
-			name = 'max'
-			self.makeRect(className, x, y, name, id)
-			return
 		elif className == 'float_common_atoms.multiply_add_atom(304)':
-			name = 'x+'
-			self.makeRect(className, x, y, name, id)
+			nodesI = obj.fields["multiplier_pairs(724)"]*2 + 1
+			self.makeRect(className, x, y, id, nodesI=nodesI)
 			return
 		elif className == 'float_common_atoms.sum_atom(305)':
-			name = '+++'
-			val = obj.fields["inputs(725)"]
-			name +=  str(val)
-			self.makeRect(className, x, y, name, id)
+			nodesI = obj.fields["inputs(725)"]
+			self.makeRect(className, x, y, id, nodesI=nodesI)
 			return
+			name =  str(val)
 
-		#DSP
-		elif className == 'float_common_atoms.svf_filter_atom(578)':
-			name = 'Filter'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
-		elif className == 'float_common_atoms.surge_classic_oscillator_atom(491)':
-			name = 'Surge Osc'
-			self.makeRect(className, x, y, name, id, vertical = True)
+		#Buffers
+		elif className in ('float_common_atoms.buffer_reader_atom(331)','float_common_atoms.buffer_writer_atom(364)'):
+			w = nodes.list[className]['w']
+			self.makeRect(className, x, y, id)
+			self.canvas.create_text(x+w/2,y+h/2,fill="Yellow",font=THK_FONT, text='B', anchor="n", tags=("grapheditor","id"+str(id), "2pt", "name"))
 			return
 
 		#components
 		elif className == 'float_core.proxy_in_port_component(154)':
+			self.makeRect(className, x, y, id)
+			w = nodes.list[className]['w']
+			h = nodes.list[className]['h']
 			name = obj.fields["port(301)"].fields["decorated_name(499)"]
-			self.makeRect(className, x, y, name, id)
+			self.canvas.create_text(x+w/2,y+h/2,fill="white",font=THK_FONT, text=name[:2], anchor="center", tags=("grapheditor","id"+str(id), "2pt", "name"))
 			self.canvas.create_polygon(x+10, y+v_offset, x, y+v_offset-7, x, y+v_offset+7, outline="#eee", fill="#eee",
 												tags=("grapheditor","id"+str(id), "6pt", "deco"))
 			return
 			#val = obj.fields["port(301)"].fields["decorated_name(499)"]
 			#name += '\n' + val
 		elif className == 'float_core.proxy_out_port_component(50)':
+			self.makeRect(className, x, y, id)
+			w = nodes.list[className]['w']
+			h = nodes.list[className]['h']
 			name = obj.fields["port(301)"].fields["decorated_name(499)"]
-			self.makeRect(className, x, y, name, id)
+			self.canvas.create_text(x+w/2,y+h/2,fill="white",font=THK_FONT, text=name[:2], anchor="center", tags=("grapheditor","id"+str(id), "2pt", "name"))
+			self.canvas.create_polygon(x+w-10, y+v_offset, x+w, y+v_offset-7, x+w, y+v_offset+7, outline="#eee", fill="#eee",
+												tags=("grapheditor","id"+str(id), "6pt", "deco"))
 			return
 			#val = obj.fields["port(301)"].fields["decorated_name(499)"]
 			#name += '\n' + val
-		elif className == 'float_core.spectrum_analyser_component(1851)':
-			name = 'FFT'
-			self.makeRect(className, x, y, name, id)
-			return
-		elif className == 'float_core.audio_sidechain_routing_component(857)':
-			name = 'Sidechain'
-			self.makeRect(className, x, y, name, id, vertical = True)
-			return
 		elif className == 'float_core.nested_device_chain_slot(587)':
 			name = obj.fields["name(835)"]
 			b = BORDER
@@ -400,6 +355,18 @@ class EditorCanvas(tk.Frame):
 			self.canvas.create_text(x+b+DOT_SIZE,y+2*b,fill="white",font=THK_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
 			nodesI = nodes.list[className]['i']
 			nodesO = nodes.list[className]['o']
+		elif className == 'float_core.nested_device_chain_slot(587)':
+			name = obj.fields["name(835)"]
+			b = BORDER
+			(w,h) = (75,40)
+			self.canvas.create_rectangle(x, y, x+w, y+h, activeoutline = "white" , outline=BASECOL, fill=BASECOL, tags=("grapheditor","id"+str(id), "4pt", "case"))
+			self.canvas.create_rectangle(x+b, y+b, x+w-b, y+h-b , outline="#333", fill="#333", tags=("grapheditor","id"+str(id), "4pt", "deco"))
+			self.canvas.create_text(x+b+DOT_SIZE,y+2*b,fill="white",font=THK_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
+			nodesI = nodes.list[className]['i']
+			nodesO = nodes.list[className]['o']
+		elif className in nodes.list:
+			self.makeRect(className, x, y, id)
+			return
 		else:
 			color = "#"+("%06x"%random.randint(0,16777215))
 			(w,h) = (100,50)
@@ -414,9 +381,11 @@ class EditorCanvas(tk.Frame):
 			current = self.canvas.coords("id"+str(id)+"&&case")
 			self.canvas.coords("id"+str(id)+"&&case", current[0], current[1], current[2], y+doth)
 
-	def makeRect(self, className, x, y, name, id, w = 0, h = 0, b = BORDER, v_offset = TOTAL_OFF, vertical = False):
-		nodesI = nodes.list[className]['i']
-		nodesO = nodes.list[className]['o']
+	def makeRect(self, className, x, y, id, name = None, w = 0, h = 0, nodesI = None, nodesO = None, b = BORDER, v_offset = TOTAL_OFF, vertical = False, center = False):
+		if not nodesI:
+			nodesI = nodes.list[className]['i']
+		if not nodesO:
+			nodesO = nodes.list[className]['o']
 		if not w:
 			if vertical:
 				w = 30
@@ -432,11 +401,25 @@ class EditorCanvas(tk.Frame):
 				except:
 					ports = max(nodesI, nodesO)
 					h = (PORT_OFF)*(ports-1)+2*v_offset
-		self.canvas.create_rectangle(x, y, x+w, y+h, activeoutline = "white" , outline=ACCCOL1, fill=ACCCOL1, tags=("grapheditor","id"+str(id), "4pt", "case"))
+		if not name:
+			if "name" in nodes.list[className]:
+				name = nodes.list[className]["name"]
+		if "vertical" in nodes.list[className]:
+			vertical = True
+		if "center" in nodes.list[className]:
+			center = True
+		if "shape" in nodes.list[className]: #doesnt work yet
+			if nodes.list[className]['shape'] == "hex":
+				hexOff = round(w/2/1.73205)
+				self.canvas.create_polygon(x,y+h/2, x+hexOff,y, x+w-hexOff,y, x+w,y+h/2, x+w-hexOff,y+h, x+hexOff,y+h, activeoutline = "white" , outline=ACCCOL1, fill=ACCCOL1, tags=("grapheditor","id"+str(id), "6pt", "case"))
+		else:
+			self.canvas.create_rectangle(x, y, x+w, y+h, activeoutline = "white" , outline=ACCCOL1, fill=ACCCOL1, tags=("grapheditor","id"+str(id), "4pt", "case"))
 		#self.canvas.create_rectangle(x+b, y+b, x+w-b, y+h-b , outline=ACCCOL1, fill=ACCCOL1, tags=("grapheditor","id"+str(id), "4pt", "deco"))
 		if (name):
 			if vertical:
 				self.canvas.create_text(x+w/2,y+h/2,fill="white",font=MED_FONT, text=name, angle=90, tags=("grapheditor","id"+str(id), "2pt", "name"))
+			elif center:
+				self.canvas.create_text(x+w/2,y+h/2,fill="white",font=MED_FONT, text=name, tags=("grapheditor","id"+str(id), "2pt", "name"))
 			else:
 				self.canvas.create_text(x+b+DOT_SIZE,y+b,fill="white",font=MED_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
 		for inports in range(nodesI):
@@ -444,30 +427,38 @@ class EditorCanvas(tk.Frame):
 		for outports in range(nodesO):
 			self.canvas.create_oval(x+w-DOT_SIZE, y+(PORT_OFF)*(outports)-DOT_SIZE+v_offset, x+w+DOT_SIZE, y+(PORT_OFF)*(outports)+DOT_SIZE+v_offset, activeoutline = "black" , outline=NODECOL, fill=NODECOL ,tags=("grapheditor","id"+str(id), "4pt", "port", "out", str(outports)))
 		#return nodesI, nodesO
-	
+
 	def on_token_press(self, event):
-		self._drag_data["item"] = self.canvas.gettags(*self.canvas.find_closest(event.x, event.y))[1] #id is tags[1]
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		self._drag_data["item"] = self.canvas.gettags(*self.canvas.find_closest(x, y))[1] #id is tags[1]
+		self._dragged = False
 		for item in self.canvas.find_withtag(self._drag_data["item"]):
 			c = self.canvas.coords(item)
 			if len(c) == 2:
-				self._drag_data["relPos"][item] = [c[0] - event.x, c[1] - event.y]
+				self._drag_data["relPos"][item] = [c[0] - x, c[1] - y]
 			elif len(c) == 4:
-				self._drag_data["relPos"][item] = [c[0] - event.x, c[1] - event.y, c[2] - event.x, c[3] - event.y]
+				self._drag_data["relPos"][item] = [c[0] - x, c[1] - y, c[2] - x, c[3] - y]
 			elif len(c) == 6:
-				self._drag_data["relPos"][item] = [c[0] - event.x, c[1] - event.y, c[2] - event.x, c[3] - event.y, c[4] - event.x, c[5] - event.y]
+				self._drag_data["relPos"][item] = [c[0] - x, c[1] - y, c[2] - x, c[3] - y, c[4] - x, c[5] - y]
 
 	def on_token_release(self, event):
+		if not self._dragged:
+			self._draw_inspector(event.x,event.y)
+			print("clicked")
 		self._drag_data["item"] = None
 		self._drag_data["x"] = 0
 		self._drag_data["y"] = 0
 
 	def on_token_motion(self, event):
+		self._dragged = True
+		eX,eY = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		xOff, yOff = eX-event.x, eY-event.y
 		idNum = int(self._drag_data["item"][2:])
 		r = self._drag_data["relPos"][self.canvas.find_withtag(self._drag_data["item"]+"&&case")[0]]
-		h = r[0]-r[2]
-		w = r[1]-r[3]
-		x = min(max(0,event.x+r[0]), self.canvas.winfo_width()+h)
-		y = min(max(0,event.y+r[1]), self.canvas.winfo_height()+w)
+		w = r[2]-r[0]
+		h = r[3]-r[1]
+		x = min(max(0+xOff,eX+r[0]), self.canvas.winfo_width()-w+xOff)
+		y = min(max(0+yOff,eY+r[1]), self.canvas.winfo_height()-h+yOff)
 		i = 0
 		for inport in self.adjList[idNum]: #redraw incoming connections
 			if inport:
@@ -475,7 +466,7 @@ class EditorCanvas(tk.Frame):
 				portName = str(idNum) + ',' + str(i)
 				#print (inport)
 				dist = min(abs(current[0] - current[6])/4,75) #for curvature
-				new = (min(max(w,event.x+r[2]), self.canvas.winfo_width()), min(max(0,event.y+r[1]), self.canvas.winfo_height()) + PORT_OFF*(self.linePorts[portName][1])+TOTAL_OFF)
+				new = (min(max(w+xOff,eX+r[2]), self.canvas.winfo_width()+xOff), y + PORT_OFF*(self.linePorts[portName][1])+TOTAL_OFF)
 				self.canvas.coords(inport, new[0], new[1], new[0]+dist, new[1], current[6]-dist, current[7], current[6], current[7])
 			i+=1
 		i = 0
@@ -486,7 +477,7 @@ class EditorCanvas(tk.Frame):
 				portName = str(i) + ',' + str(idNum)
 				#print (outport)
 				dist = min(abs(current[0] - current[6])/4,75) #for curvature
-				new = (min(max(0,event.x+r[0]), self.canvas.winfo_width()-w), min(max(0,event.y+r[1]), self.canvas.winfo_height()-h) + PORT_OFF*(self.linePorts[portName][0])+TOTAL_OFF)
+				new = (x, y + PORT_OFF*(self.linePorts[portName][0])+TOTAL_OFF)
 				self.canvas.coords(outport, current[0], current[1], current[0]+dist, current[1], new[0]-dist, new[1], new[0], new[1])
 			i+=1
 		for item in self.canvas.find_withtag(self._drag_data["item"]): #redraw cell
@@ -499,11 +490,25 @@ class EditorCanvas(tk.Frame):
 			elif tag == "6pt":
 				self.canvas.coords(item, x-r[0]+localr[0], y-r[1]+localr[1], x-r[0]+localr[2], y-r[1]+localr[3], x-r[0]+localr[4], y-r[1]+localr[5])
 
+	def delete_line(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		tags = self.canvas.gettags(*self.canvas.find_closest(x, y))
+		if tags[1][:4] == "line":
+			lineIndex = tags[1][4:]
+			self.canvas.delete(tags[1])
+			for i in range(self.size):
+				if tags[1] in self.adjList[i]:
+					for j in range(self.size):
+						if self.adjList[i][j] == tags[1]:
+							self.adjList[i][j] = None
+							return
+
 	def on_port_press(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
 		if self._currentlyConnecting:
-			self._new_conn_data['drain'] = self.canvas.find_closest(event.x, event.y)
+			self._new_conn_data['drain'] = self.canvas.find_closest(x, y)
 			drainTags = self.canvas.gettags(*self._new_conn_data['drain'])
-			if drainTags[3] == 'port':
+			if 'port' in drainTags:
 				self._new_conn_data['type1'] = drainTags[4]
 				self._new_conn_data['port1'] = drainTags[5]
 				if self._new_conn_data['type0'] == self._new_conn_data['type1']:
@@ -531,27 +536,28 @@ class EditorCanvas(tk.Frame):
 				print(sourceId, drainId)
 				self._currentlyConnecting = False
 		else:
-			self._new_conn_data['source'] = self.canvas.find_closest(event.x, event.y)
+			self._new_conn_data['source'] = self.canvas.find_closest(x, y)
 			tags = self.canvas.gettags(*self._new_conn_data['source'])
 			if tags[3] == 'port':
 				self._new_conn_data['type0'] = tags[4]
 				self._new_conn_data['port0'] = tags[5]
 				c = self.canvas.coords(self._new_conn_data['source'])
 				nX, nY = (c[0] + c[2]) / 2, (c[1] + c[3]) / 2
-				mX, mY = event.x, event.y
+				mX, mY = x, y
 				dist = min(abs(nX - mX)/4,75) #for curvature
 				if self._new_conn_data['type0'] == 'in':
 					self.canvas.tag_lower(self.canvas.create_line(mX, mY, mX+dist, mY, nX-dist, nY, nX, nY, width=LINE_WID, fill='white', smooth=True, tags=('grapheditor', 'connecting')))
 				elif self._new_conn_data['type0'] == 'out':
 					self.canvas.tag_lower(self.canvas.create_line(nX, nY, nX+dist, nY, mX-dist, mY, mX, mY, width=LINE_WID, fill='white', smooth=True, tags=('grapheditor', 'connecting')))
 				self._currentlyConnecting = True
-		print(self._currentlyConnecting)
-	
+		#print(self._currentlyConnecting)
+
 	def on_move(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
 		if (self._currentlyConnecting):
 			c = self.canvas.coords(self._new_conn_data['source'])
 			nX, nY = (c[0] + c[2]) / 2, (c[1] + c[3]) / 2
-			mX, mY = event.x, event.y
+			mX, mY = x, y
 			dist = min(abs(c[0] - mX)/4,75) #for curvature
 			if self._new_conn_data['type0'] == 'in':
 				self.canvas.coords("connecting", mX, mY, mX+dist, mY, nX-dist, nY, nX, nY)
@@ -564,6 +570,23 @@ class EditorCanvas(tk.Frame):
 			dist = min(abs(current[0] - current[6])/4,75) #for curvature
 			new = (min(max(0,event.x+r[0]), self.canvas.winfo_width()-w), min(max(0,event.y+r[1]), self.canvas.winfo_height()-h) + PORT_OFF*(self.linePorts[portName][0])+TOTAL_OFF)
 			self.canvas.coords(outport, current[0], current[1], current[0]+dist, current[1], new[0]-dist, new[1], new[0], new[1])'''
+
+	def on_click(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		clickedOn = self.canvas.find_withtag("current")
+		if self._currentlyConnecting:
+			tags = self.canvas.gettags(*clickedOn)
+			#print(clickedOn)
+			if len(clickedOn) == 1 and "port" not in tags:
+				self.canvas.delete("connecting")
+				self._currentlyConnecting = False
+		if clickedOn:
+			print("clicked on ",clickedOn)
+			return
+		print("debug")
+		if self._inspector_active:
+			self.canvas.delete("inspector")
+			self._inspector_active = False
 
 	def load(self, file):
 		self.data = file
@@ -593,10 +616,14 @@ class EditorCanvas(tk.Frame):
 					#print(children[item].fields)
 				else:
 					self._draw_atom(children[item])
+					self.data_info[children[item].id] = children[item]
 				self.addKids(children[item])
 				item += 1
 		#print(self.adjList)
 		self._add_connections()
+		#self.canvas.create_oval(0,0,10,10, activeoutline = "black" , outline=NODECOL, fill=NODECOL ,tags=("poop"))
+		self.update()
+		self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
 	def addKids(self, child):
 		try:
@@ -629,6 +656,7 @@ class EditorCanvas(tk.Frame):
 					#print(kids[item].fields)
 				else:
 					self._draw_atom(kids[item].fields["source_component(248)"])
+					self.data_info[kids[item].fields["source_component(248)"].id] = kids[item].fields["source_component(248)"]
 					self.size = max(self.size, max(kids[item].fields["source_component(248)"].id,child.id)+1)
 					while (len(self.adjList) < self.size):
 						self.adjList.append([])
