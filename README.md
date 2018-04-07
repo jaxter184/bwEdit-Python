@@ -4,7 +4,7 @@ To use the editor, just run 'editor.py' and load a file from anywhere on your co
 To use the converter, put items in the 'input' folder and run 'convert.py'. Outputs will show up in a folder labelled 'output'.  
 collate.py is just there for decoration.
 
-Editor commands:
+Editor commands:  
 -Click an atom to view its data  
 -Click an atom's node to start a connection, then click a different atom's corresponding node to complete the connection  
 -Click a connection to delete it  
