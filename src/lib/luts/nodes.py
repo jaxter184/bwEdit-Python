@@ -27,6 +27,12 @@ list = {
 		"o":1,
 		"w":60,
 	},
+	'constant_boolean_value_atom(635)': {
+		"name":"ConstB",
+		"i":0,
+		"o":1,
+		"w":60,
+	},
 	'float_common_atoms.nitro_atom(1721)': {
 		"name":"nitro",
 		"i":12,
@@ -101,7 +107,7 @@ list = {
 	},
 	'float_common_atoms.stereo_width_atom(297)': {
 		"name":"Width",
-		"i":1,
+		"i":2,
 		"o":1,
 		"w":30,
 		"vertical":None,
@@ -179,12 +185,28 @@ list = {
 		"w":40,
 	},
 	
+	#Control
+	'float_common_atoms.analog_adsr_atom(372)': {
+		"name":"AnalogADSR",
+		"i":5,
+		"o":1,
+		"w":30,
+		"vertical":None,
+	},
+	
 	#DSP
+	'float_common_atoms.sample_player_atom(330)': {
+		"name":"Sampler",
+		"i":6,
+		"o":4,
+		"w":30,
+		"vertical":None,
+	},
 	'float_common_atoms.nested_allpass_filter_atom(336)': {
 		"name":"AllPass",
 		"i":5,
 		"o":1,
-		"w":25,
+		"w":30,
 		"vertical":None,
 	},
 	'float_common_atoms.audio_delay_atom(339)': {
