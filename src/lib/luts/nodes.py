@@ -27,12 +27,20 @@ list = {
 		"o":1,
 		"w":60,
 	},
+	'float_common_atoms.indexed_lookup_table_atom(344)': {
+		"name":"LUT",
+		"i":1,
+		"o":1,
+		"w":60,
+	},
 	'constant_boolean_value_atom(635)': {
 		"name":"ConstB",
 		"i":0,
 		"o":1,
 		"w":60,
 	},
+	
+	
 	'float_common_atoms.nitro_atom(1721)': {
 		"name":"nitro",
 		"i":12,
@@ -100,10 +108,6 @@ list = {
 		"w":50,
 		"h":50,
 		"vertical":None,
-	},
-	'float_common_atoms.indexed_lookup_table_atom(344)': {
-		"i":1,
-		"o":1,
 	},
 	'float_common_atoms.stereo_width_atom(297)': {
 		"name":"Width",
@@ -302,7 +306,6 @@ list = {
 		"name":"Gain Detect",
 		"i":4,
 		"o":1,
-		"w":30,
 		"vertical":None,
 	},
 	'float_common_atoms.domain_converter_atom(320)': {
@@ -339,7 +342,6 @@ list = {
 		"name":"Step Sequencer",
 		"i":5,
 		"o":1,
-		"w":30,
 		"vertical":None,
 	},
 	
@@ -385,7 +387,7 @@ list = {
 	'float_common_atoms.note_event_to_decimal_event_atom(787)': {
 		"name":"NE→DE",
 		"i":2,
-		"o":1,
+		"o":2,
 		"w":60,
 		"center":None,
 		#"shape":"hex",
@@ -395,28 +397,30 @@ list = {
 		"name":"E Repeat",
 		"i":3,
 		"o":1,
-		"w":30,
+		"vertical":None,
+	},
+	'float_common_atoms.velocity_amp_multiplier_atom(471)': {
+		"name":"Velocity",
+		"i":3,
+		"o":1,
 		"vertical":None,
 	},
 	'float_common_atoms.held_impulse_atom(405)': {
 		"name":"HeldImpulse",
 		"i":2,
 		"o":1,
-		"w":30,
 		"vertical":None,
 	},
 	'float_common_atoms.exponential_decay_atom(398)': {
 		"name":"exp Decay",
-		"i":2,
+		"i":3,
 		"o":1,
-		"w":30,
 		"vertical":None,
 	},
 	'float_common_atoms.amp_and_pan_atom(431)': {
 		"name":"Amp&Pan",
 		"i":3,
 		"o":1,
-		"w":30,
 		"vertical":None,
 	},
 	'float_common_atoms.moving_average_filter_atom(565)': {
@@ -436,5 +440,17 @@ list = {
 		"i":1,
 		"o":0,
 		"w":60,
+	},
+	'float_common_atoms.sine_resonator_atom(413)': {
+		"name":"SineReso",
+		"i":3,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.bend_curve_atom(542)': {
+		"name":"BendCurve",
+		"i":2,
+		"o":1,
+		"vertical":None,
 	},
 }

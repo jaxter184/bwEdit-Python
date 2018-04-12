@@ -2,11 +2,14 @@ import tkinter as tk
 import random
 from tkinter import ttk
 from tkinter import filedialog
-from src import decoder
+from src import decoder, encoder
 from src.lib import fs, util, atoms
 from src.lib.luts import nodes
 from src.nitro import nitro
 import os
+
+DEBUG = False
+
 MED_FONT = ("Verdana", 9)
 BOL_FONT = ("Verdana bold", 9)
 THK_FONT = ("Arial bold", 14)
@@ -29,16 +32,16 @@ class Application(tk.Tk):
 		tk.Tk.__init__(self, *args, **kwargs)
 		
 		tk.Tk.iconbitmap(self, default="bitwig.ico")
-		tk.Tk.wm_title(self, "poop")
+		tk.Tk.wm_title(self, "bwEdit")
 		
 		top = self.winfo_toplevel() #menu bar
 		self.menuBar = tk.Menu(top)
 		top['menu'] = self.menuBar
 		self.subMenu = tk.Menu(self.menuBar, tearoff=0) #file
 		self.menuBar.add_cascade(label='File', menu=self.subMenu)
-		self.subMenu.add_command(label='Save',)
+		self.subMenu.add_command(label='Save As', command=self.savefile)
 		self.subMenu.add_command(label='Load', command=self.openfile)
-		self.subMenu.add_command(label='Other',)
+		self.subMenu.add_command(label='Export to JSON', command=self.exportfile)
 		self.subMenu.add_separator()
 		self.subMenu.add_command(label='Exit',)
 		self.subMenu = tk.Menu(self.menuBar, tearoff=0) #help
@@ -70,8 +73,32 @@ class Application(tk.Tk):
 		print ('-'+filename)
 		tk.Tk.wm_title(self, filename)
 		with open(filename, 'rb') as readThis:
-			f = decoder.bwDecode(readThis.read())
+			r = readThis.read()
+			#self.frames[MainPage].editor.header = r[:24]
+			f = decoder.bwDecode(r)
 		self.frames[MainPage].editor.load(f)
+
+	def savefile(self):
+		self.frames[MainPage].editor.renumberAll()
+		with tk.filedialog.asksaveasfile(mode='wb', defaultextension=".bw") as f:
+			if f is None: #in case of cancel
+				return
+			header = self.frames[MainPage].editor.header
+			header = header[:11] + '2' + header[12:]
+			output = header.encode('utf-8') + encoder.bwEncode(self.frames[MainPage].editor.data)
+			f.write(output)
+
+	def exportfile(self): #same as save except it serializes the json instead of encoding it
+		self.frames[MainPage].editor.renumberAll()
+		with tk.filedialog.asksaveasfile(mode='wb', defaultextension=".bw") as f:
+			if f is None: #in case of cancel
+				return
+			header = self.frames[MainPage].editor.header
+			output = ''
+			for item in self.frames[MainPage].editor.data:
+				output += util.json_encode(atoms.serialize(item))
+			output = header + decoder.reformat(output)
+			f.write(output.encode("utf-8"))
 
 class MainPage(tk.Frame):
 	def __init__(self, parent, controller):
@@ -86,6 +113,7 @@ class EditorCanvas(tk.Frame):
 		tk.Frame.__init__(self, parent)
 		self.data=0
 		self.data_info = {}
+		self.header = 'BtWg00010001008d000016a00000000000000000'
 
 		self.canvas = tk.Canvas(self, bg = "#2e2e2e")
 		self.hbar=tk.Scrollbar(self,orient='horizontal')
@@ -142,38 +170,73 @@ class EditorCanvas(tk.Frame):
 		clickedOn = self.canvas.find_withtag("current")
 		currentTags = self.canvas.gettags(clickedOn)
 		id = int(currentTags[1][2:])
-		if self._inspector_active and overwrite:
+		if overwrite:
 			self.canvas.delete("inspector")
+			self.listList = []
+			self.listNum = 0
 		self._inspector_active = True
 		x,y = self.canvas.canvasx(eX), self.canvas.canvasy(eY)
-		inspWind = self.canvas.create_rectangle(x, y, x+10, y+10, outline=LINE_COL, fill=BASECOL, tags=("grapheditor","id"+str(id), "4pt", "inspwind", "inspector"))
-		fieldOffset = 1
+		inspWind = self.canvas.create_rectangle(x, y, x+10, y+10, outline=LINE_COL, fill=BASECOL, tags=("grapheditor","id"+str(id), "4pt", "inspwind", "inspector")) #id might be problematic for lists
 		maxWidth = 5
-		name = obj.classname
-		i = 0
-		while i < len(name):
-			if name[i] == '.':
-				break
-			i+=1
+		print(currentTags)
+		if "n_list" in currentTags:
+			fieldOffset = 0
+			iterate = obj
+			print(iterate)
 		else:
-			i = -1;
-		name = name[i+1:]
-		canvasText = self.canvas.create_text(x+BORDER,y+BORDER+BOL_FONT[1],fill="white",font=BOL_FONT, text=name, anchor="w", tags=("grapheditor","id"+str(id), "2pt", "text", "inspector",))
-		textBounds = self.canvas.bbox(canvasText)
-		maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
-		for fields in obj.fields:
-			field = obj.fields[fields]
-			tags = ("grapheditor","id"+str(id), "2pt", "text",)
-			if type(field) in (int, str, float, bool, None,):
-				if fields == "code(6264)":
-					text = "{" + fields + "}"
-				else:
-					text = fields + ": " + str(field)
-			elif type(field) in (atoms.Atom,):
-				text = "<" + fields + ">"
-				tags+=(field.id, "nestedInsp")
+			fieldOffset = 1
+			name = obj.classname
+			i = 0
+			while i < len(name):
+				if name[i] == '.':
+					break
+				i+=1
 			else:
-				text = fields + ": invalid"
+				i = -1;
+			name = name[i+1:] + " id: " + str(obj.id)
+			canvasText = self.canvas.create_text(x+BORDER,y+BORDER+BOL_FONT[1],fill="white",font=BOL_FONT, text=name, anchor="w", tags=("grapheditor","id"+str(id), "2pt", "text", "inspector",))
+			textBounds = self.canvas.bbox(canvasText)
+			maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
+			iterate = obj.fields
+		for fields in iterate:
+			tags = ("grapheditor","id"+str(id), "2pt", "text",)
+			if "n_list" in currentTags:
+				if type(fields) in (int, str, float, bool, None,):
+					if fields == "code(6264)":
+						text = "{" + fields + "}"
+					else:
+						text = fields
+				elif type(fields) in (atoms.Atom,):
+					if fields.classname == "float_core.inport_connection(105)":
+						text = fields.fields["source_component(248)"].classNum
+					else:
+						text = "<" + fields.classname + ">"
+					tags+=(fields.id, "nestedInsp",)
+				elif type(fields) in (list,):
+					text = "[" + fields + "]"
+					self.listList.append(fields)
+					tags+=(str(self.listNum), "nestedInsp", "n_list",)
+					self.listNum+=1
+				else:
+					text = fields + ": invalid"
+			else:
+				field = obj.fields[fields]
+				if type(field) in (int, str, float, bool, None,):
+					if fields == "code(6264)":
+						text = "{" + fields + "}"
+					else:
+						text = fields + ": " + str(field)
+				elif type(field) in (atoms.Atom,):
+					text = "<" + fields + ">"
+					tags+=(field.id, "nestedInsp",)
+				elif type(field) in (list,):
+					print(field)
+					text = "[" + fields + "]"
+					self.listList.append(field)
+					tags+=(str(self.listNum), "nestedInsp", "n_list",)
+					self.listNum+=1
+				else:
+					text = fields + ": invalid"
 			tags+=("inspector",)
 			canvasText = self.canvas.create_text(x+BORDER,y+BORDER+MED_FONT[1]*2*fieldOffset+MED_FONT[1],fill="white",font=MED_FONT, text=text, anchor="w", tags=tags)
 			textBounds = self.canvas.bbox(canvasText)
@@ -189,9 +252,16 @@ class EditorCanvas(tk.Frame):
 		tags = self.canvas.gettags(clickedOn)
 		if "nestedInsp" in tags:
 			#print(self.data_info)
-			self._draw_inspector(self.data_info[int(tags[4])], event.x, event.y, False)
+			if "n_list" in tags:
+				self._draw_inspector(self.listList[int(tags[4])], event.x, event.y, False)
+			else:
+				self._draw_inspector(self.data_info[int(tags[4])], event.x, event.y, False)
 
 	def makeRect(self, className, x, y, id, name = None, w = 0, h = 0, nodesI = None, nodesO = None, b = BORDER, v_offset = TOTAL_OFF, vertical = False, center = False):
+		if "vertical" in nodes.list[className]:
+			vertical = True
+		if "center" in nodes.list[className]:
+			center = True
 		if not nodesI:
 			nodesI = nodes.list[className]['i']
 		if not nodesO:
@@ -214,10 +284,6 @@ class EditorCanvas(tk.Frame):
 		if not name:
 			if "name" in nodes.list[className]:
 				name = nodes.list[className]["name"]
-		if "vertical" in nodes.list[className]:
-			vertical = True
-		if "center" in nodes.list[className]:
-			center = True
 		if "shape" in nodes.list[className]: #doesnt work yet
 			if nodes.list[className]['shape'] == "hex":
 				hexOff = round(w/2/1.73205)
@@ -255,7 +321,7 @@ class EditorCanvas(tk.Frame):
 		if not self._dragged:
 			id = int(self._drag_data["item"][2:])
 			self._draw_inspector(self.data_info[id], event.x, event.y)
-			print("clicked")
+			#print("clicked")
 		self._drag_data["item"] = None
 		self._drag_data["x"] = 0
 		self._drag_data["y"] = 0
@@ -387,14 +453,11 @@ class EditorCanvas(tk.Frame):
 		clickedOn = self.canvas.find_withtag("current")
 		if self._currentlyConnecting:
 			tags = self.canvas.gettags(*clickedOn)
-			#print(clickedOn)
 			if len(clickedOn) == 1 and "port" not in tags:
 				self.canvas.delete("connecting")
 				self._currentlyConnecting = False
 		if clickedOn:
-			#print("clicked on ",clickedOn)
 			return
-		#print("debug")
 		if self._inspector_active:
 			self.canvas.delete("inspector")
 			self._inspector_active = False
@@ -407,12 +470,31 @@ class EditorCanvas(tk.Frame):
 		objLocs = []
 		objSize = []
 		self.linePorts = {}
+		
+		#initialize adjacency list size
 		self.adjList = []
 		for i in range(self.size):
 			self.adjList.append([])
 			for j in range(self.size):
 				self.adjList[i].append(None)
 		#print(self.adjList)
+		
+		self.data[0].id = 1
+		#flatten data
+		'''for eachField in ("proxy_in_ports(177)","proxy_out_ports(178)"):
+			for item in range(len(self.data[1].fields[eachField])):
+				if isinstance(self.data[1].fields[eachField][item], atoms.Atom):
+					self.data[1].fields["child_components(173)"].append(self.data[1].fields[eachField][item])
+					self.data[1].fields[eachField][item] = atoms.Reference(self.data[1].fields[eachField][item].id)'''
+		self.data[1].fields["child_components(173)"] = self.flattenData(self.data[1].fields["child_components(173)"], True)
+		self.data[1].fields["child_components(173)"] = self.reorder(self.data[1].fields["child_components(173)"])
+		
+		if DEBUG: print("debug 0")
+		self.renumberAll()
+
+		if DEBUG: print ("child components: ", *self.data[1].fields["child_components(173)"], sep = "\n")
+		
+		#draw atoms
 		for eachField in ("child_components(173)","proxy_in_ports(177)","proxy_out_ports(178)"):
 			children = self.data[1].fields[eachField]
 			item = 0
@@ -424,24 +506,227 @@ class EditorCanvas(tk.Frame):
 					#print(children[item])
 				except:
 					pass
+					print("error: object in list that is neither reference nor atom 1818")
 					#print(children[item].fields)
 				else:
 					self._draw_atom(children[item])
 					self.data_info[children[item].id] = children[item]
 				self.addKids(children[item])
 				item += 1
-		#print(self.adjList)
+		
+		if DEBUG: print("debug 2")
+		#draw connections
 		self._add_connections()
-		#self.canvas.create_oval(0,0,10,10, activeoutline = "black" , outline=NODECOL, fill=NODECOL ,tags=("poop"))
+		
+		#update scroll region
 		self.update()
 		self.canvas.config(scrollregion=self.canvas.bbox("all"))
+	
+	def flattenData(self, data, isRoot = True):
+		'''for eachConnection in inPortList:
+			source = eachConnection.fields["source_component(248)"]
+			if (isinstance(source, atoms.Atom)):
+				print("found an atom")
+				poop = source.fields["settings(6194)"].fields["inport_connections(614)"] #should work if the class has nested classes
+				self.flattenData((poop,))
+				eachConnection.fields["source_component(248)"] = atoms.Reference(source.id)
+				output.insert(0, source)
+				self.flattenedData.insert(0, source)
+			elif (isinstance(source, atoms.Reference)):
+				print("found a reference")'''
+		if isRoot:
+			self.flattenedData = []
+		output = []
+		for eachClass in range(len(data)):
+			listItem = data[eachClass]
+			if not isRoot:
+				listItem = listItem.fields["source_component(248)"]
+			if (isinstance(listItem, atoms.Atom)):
+				if listItem.classname == "float_core.proxy_in_port_component(154)":
+					output.append(data[eachClass])
+					continue
+				try:
+					bufferObj = listItem.fields["buffer(733)"]
+				except:
+					pass
+				else:
+					if (isinstance(bufferObj, atoms.Atom)):
+						if isRoot:
+							print("untested stuff, might be unstable")
+							inPortList = bufferObj.fields["settings(6194)"].fields["inport_connections(614)"] #should work if the class has nested classes
+							replacement = data[eachClass].fields["buffer(733)"]
+							data[eachClass].fields["buffer(733)"].fields["settings(6194)"].fields["inport_connections(614)"] =  self.flattenData(inPortList, False)
+							replacement = atoms.Reference(replacement.id)
+							data[eachClass].fields["buffer(733)"] = replacement
+							self.flattenedData.insert(0, bufferObj)
+						else:
+							inPortList = bufferObj.fields["settings(6194)"].fields["inport_connections(614)"] #should work if the class has nested classes
+							replacement = atoms.Reference(data[eachClass].fields["source_component(248)"].fields["buffer(733)"].id)
+							data[eachClass].fields["source_component(248)"].fields["buffer(733)"].fields["settings(6194)"].fields["inport_connections(614)"] =  self.flattenData(inPortList, False)
+							data[eachClass].fields["source_component(248)"].fields["buffer(733)"] = replacement
+							self.flattenedData.insert(0, bufferObj)
+					elif (isinstance(bufferObj, atoms.Reference)):
+						pass
+				#print("found an atom: ", listItem)
+				inPortList = listItem.fields["settings(6194)"].fields["inport_connections(614)"] #should work if the class has nested classes
+				if isRoot:
+					data[eachClass].fields["settings(6194)"].fields["inport_connections(614)"] =  self.flattenData(inPortList, False)
+				else:
+					replacement = data[eachClass]
+					data[eachClass].fields["source_component(248)"].fields["settings(6194)"].fields["inport_connections(614)"] =  self.flattenData(inPortList, False)
+					replacement.fields["source_component(248)"] = atoms.Reference(replacement.fields["source_component(248)"].id)
+					output.append(replacement)
+				self.flattenedData.insert(0, listItem)
+			elif (isinstance(listItem, atoms.Reference)):
+				output.append(data[eachClass])
+		if isRoot:
+			for eachBaseClass in output: #only appends the atoms and not the references
+				if isinstance(eachBaseClass, atoms.Atom):
+					self.flattenedData.append(eachBaseClass)
+			#output.extend(data)
+			return self.flattenedData
+		return output
 
+	def renumberAll(self): #should move to atoms.py eventually to make it a method of the atom rather than just a random function
+		self.generateIDList()
+		self.idIndex = 2
+		self.referenceIDs = {}
+		for eachField in ("child_components(173)","panels(6213)","proxy_in_ports(177)","proxy_out_ports(178)"):
+			self.data[1].fields[eachField] = self.renumberList(self.data[1].fields[eachField], False)
+	
+	def renumberList(self, list, isRoot = True):
+		output = []
+		if isRoot:
+			self.idIndex = 2
+			self.referenceIDs = {}
+		for item in list:
+			if isinstance(item, atoms.Reference):
+				pass
+				#print (item.classNum)
+				#item.setID(self.referenceIDs[item.classNum])
+				#print (item.classNum)
+			elif not isinstance(item, atoms.Atom): #elif not (isinstance(item, atoms.Atom) or isinstance(item, atoms.Reference)):
+				return list
+			output.append(self.renumberObject(item))
+		#self.generateReverseEdgeList()
+		return output
+
+	def renumberObject(self, obj):
+		if isinstance(obj, atoms.Atom):
+			self.referenceIDs[obj.id] = self.idIndex
+			obj.setID(self.idIndex)
+			self.idIndex += 1
+			for eachField in obj.fields:
+				field = obj.fields[eachField]
+				if isinstance(field, atoms.Atom):
+					obj.fields[eachField] = self.renumberObject(field)
+				elif isinstance(field, atoms.Reference):
+					#print(self.referenceIDs)
+					obj.fields[eachField].setID(self.referenceIDs[field.classNum])
+				elif isinstance(field, list):
+					obj.fields[eachField] = self.renumberList(field, False)
+				else:
+					pass
+					#print("error, not a list, reference, or atom. 1015")
+			return obj
+		elif isinstance(obj, atoms.Reference):
+			obj.setID(self.referenceIDs[obj.classNum])
+			return obj
+
+	def generateReverseEdgeList(self):
+		self.reverseList = {}
+		for item in self.data[1].fields["child_components(173)"]:
+			numInports = 0
+			for inport in item.fields["settings(6194)"].fields["inport_connections(614)"]:
+				inportSource = inport.fields["source_component(248)"]
+				if inportSource:
+					outport = inport.fields["outport_index(249)"]
+					if isinstance(inportSource, atoms.Atom):
+						self.reverseList[inportSource.id][outport] = (item.id, numInports) #double check later
+					elif isinstance(inportSource, atoms.Reference):
+						self.reverseList[inportSource.id][outport] = (item.classNum, numInports)
+				numInports += 1
+
+	def generateIDList(self):
+		self.idList = {}
+		i = 0
+		for items in self.data[1].fields["child_components(173)"]:
+			if isinstance(items, atoms.Atom):
+				self.idList[items.id] = i
+			elif isinstance(items, atoms.Reference):
+				self.idList[items.classNum] = i
+			i += 1
+
+	def reorder(self, list):
+		output = []
+		totalContained = []
+		requirements = []
+		contained = []
+		for items in list:
+			a,b = self.findRandC(items)
+			requirements.append(a)
+			contained.append(b)
+			#print(items.id)
+		#print (requirements,contained)
+		i = 0
+		while list:
+			#print (list)
+			for item in range(len(list)):
+				#print(set(requirements[item]),set(totalContained))
+				if set(requirements[item]) <= set(totalContained):
+					output.append(list[item])
+					totalContained.extend(contained[item])
+					del list[item]
+					del contained[item]
+					del requirements[item]
+					break
+			i += 1
+			if i > 2000:
+				print ("too long", *list, sep = ',')
+				while list:
+					output.append(list[0])
+					totalContained.extend(contained[0])
+					del list[0]
+					del contained[0]
+					del requirements[0]
+		#for items in output:
+			#print(items.id)
+		return output
+	
+	def findRandC(self, obj):
+		requirements = []
+		contained = []
+		if isinstance(obj, atoms.Atom) and obj.classname == "float_core.inport_connection(105)":
+			obj = obj.fields["source_component(248)"]
+		if isinstance(obj, atoms.Atom):
+			contained.append(obj.id)
+			#print (obj)
+			for eachInport in obj.fields["settings(6194)"].fields["inport_connections(614)"]:
+				a,b = self.findRandC(eachInport)
+				requirements.extend(a)
+				contained.extend(b)
+		elif isinstance(obj, atoms.Reference):
+			requirements.append(obj.classNum)
+		return requirements, contained
+	
+
+	def checkInports(self, inportList, idList):
+		for sources in inportList:
+			if isinstance(sources.fields["source_component(248)"], atoms.Reference):
+				if sources.fields["source_component(248)"].classNum in idList:
+					continue
+				return False
+			elif isinstance(sources.fields["source_component(248)"], atoms.Atom):
+				print("error: theres an atom in my boots! 484")
+		return True
+		
 	def addKids(self, child):
 		if not child:
 			return
 		try:
 			for field in child.fields:
 				if isinstance(child.fields[field], atoms.Atom):
+					#print(child.fields[field].id)
 					self.data_info[child.fields[field].id] = child.fields[field]
 					self.addKids(child.fields[field])
 		except:
@@ -456,6 +741,7 @@ class EditorCanvas(tk.Frame):
 			#print(child.fields)
 		else:
 			inportConn = 0
+			#print(kids)
 			while(inportConn < len(kids)):
 				try:
 					kids[inportConn].fields["source_component(248)"].fields["settings(6194)"].fields["desktop_settings(612)"].fields["x(17)"]
@@ -621,20 +907,20 @@ class EditorCanvas(tk.Frame):
 			val1 = obj.fields["comparison(842)"]
 			val2 = obj.fields["comparison_value(843)"]
 			(w,h) = (4*b + 8*len(name),50+MED_FONT[1])
-			self.makeRect(className, x, y, name, id, w=w, h=h)
+			self.makeRect(className, x, y, id, name, w=w, h=h)
 			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val1), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+2*MED_FONT[1],fill="white",font=THK_FONT, text=str(val2), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 		elif className == 'float_common_atoms.indexed_lookup_table_atom(344)':
-			name = 'lookup'
-			vals = obj.fields["row_data(744)"]
+			'''vals = obj.fields["row_data(744)"]
 			length = obj.fields["row_count(743)"]
 			name += '\n'
 			for i in range(length):
 				name += str(vals[i].fields["cells(726)"][0].fields["value(739)"]) + '|'
 			width = 6*(len(name)-6)
-			print("dothis.editor.238934")
+			print("dothis.editor.238934")'''
+			self.makeRect(className, x, y, id, nodesO=obj.fields["column_count(742)"])
 
 		#math
 		elif className == 'float_common_atoms.constant_add_atom(308)':

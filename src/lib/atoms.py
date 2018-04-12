@@ -29,7 +29,7 @@ def serialize(obj, state = None):
 		else:
 			return OrderedDict([
 				('class', obj.classname),
-				('object_id', state.index(obj) + 1),
+				('object_id', obj.id),
 				('data', serialize(obj.fields, state))
 			])
 	if isinstance(obj, list):
@@ -53,6 +53,9 @@ class Reference:
 	def __init__(self, classNum = 0):
 		self.classNum = classNum
 
+	def setID(self, id):
+		self.classNum = id
+	
 	def serialize(self):
 		return {'object_ref': self.classNum}
 	
@@ -90,6 +93,9 @@ class Atom:
 			self.fields = OrderedDict([])
 		self.id = idCount
 		idCount+=1
+	
+	def setID(self, id):
+		self.id = id
 	
 	def __str__(self): #just some debugging tools -jaxter184
 		#return self.stringify(0)
