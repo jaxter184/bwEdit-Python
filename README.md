@@ -12,14 +12,18 @@ Editor commands:
 
 ## Changelogs  
 
+Changelog v0.6.1:  
+-Revamped data structures (basically fancy talk for "i organize the numbers differently"  
+-Added saving and exporiting for edits to the file
+
+Woo! It works! It can change things! Unfortunately, some buffer-based devices (delays, reverbs) crash the audio engine. But they load, so that's a start!
+
+Previous changelogs:
+
 Changelog v0.6.0:  
 -Added editor  
 -Removed viewer  
 -Removed dependency: kivy
-
-Lots of new stuff and I'm too lazy to put it into a changelog. Basically, this project is now a node editor. Can't export yet, though.
-
-Previous changelogs:
 
 Changelog v0.5:  
 -Added viewer  
