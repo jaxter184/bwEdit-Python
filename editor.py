@@ -661,12 +661,8 @@ class EditorCanvas(tk.Frame):
 				if doneFlag:
 					break
 		return input, doneFlag'''
-					
-	def renumberAll(self): #should move to atoms.py eventually to make it a method of the atom rather than just a random function
-		self.refIDs = {}
-		self.renumberItem(self.data)
-	
-	def renumberItem(self, element): #isRoot only needs to be input if its a list
+
+	def renumberItem(self, element): #renumbers an atom or list of atoms. should eventually be a function of atoms. or maybe not? since i do it on a list?
 		if isinstance(element, list):
 			output = []
 			#mutate = element[:]
@@ -678,7 +674,7 @@ class EditorCanvas(tk.Frame):
 		elif isinstance(element, atoms.Atom):
 			#print(element.id, element)
 			self.refIDs[element.id] = len(self.refIDs)
-			element.setID(len(self.refIDs))
+			element.setID(self.refIDs[element.id])
 			for eachField in element.fields:
 				field = element.fields[eachField]
 				self.renumberItem(field)
@@ -728,8 +724,9 @@ class EditorCanvas(tk.Frame):
 					if self.tempAtomList[i].classname == "float_core.proxy_in_port_component(154)":
 						subClasses["proxy_in_ports(177)"].append(self.tempAtomList[i]) #get straggling unnecessary inports
 						self.tempAtomList[i] = None
-					elif self.tempAtomList[i].classname == "float_common_atoms.buffer_writer_atom(364)": #don't root buffer writers
-						pass
+					elif self.tempAtomList[i].classname == "float_common_atoms.buffer_writer_atom(364)": #prepend buffer writers
+						subClasses["child_components(173)"].insert(0,self.tempAtomList[i]) #append this root
+						self.tempAtomList[i] = None
 					else:
 						subClasses["child_components(173)"].append(self.tempAtomList[i]) #append this root
 						self.tempAtomList[i] = None
@@ -754,7 +751,8 @@ class EditorCanvas(tk.Frame):
 		#set data
 		for field in subClasses:
 			self.data[1].fields[field] = subClasses[field]
-		self.renumberAll()
+		self.refIDs = {}
+		self.renumberItem(self.data)
 	
 	def treeify(self, component):
 		if isinstance(component, atoms.Reference):

@@ -50,18 +50,21 @@ def resetId(): #geez this feels so hacky -jaxter184
 	idCount = 0
 
 class Reference:
-	def __init__(self, classNum = 0):
-		self.classNum = classNum
+	def __init__(self, id = 0):
+		self.id = id
 
+	def __str__(self):
+		return "<Reference: " + str(self.id) + '>'
+	
 	def setID(self, id):
-		self.classNum = id
+		self.id = id
 	
 	def serialize(self):
-		return {'object_ref': self.classNum}
+		return {'object_ref': self.id}
 	
 	def encode(self):
 		output = bytearray(b'')
-		output += bytearray.fromhex(hexPad(self.classNum,8))
+		output += bytearray.fromhex(hexPad(self.id,8))
 		return output
 
 class Color:
@@ -83,7 +86,7 @@ class Color:
 		
 class Atom:
 
-	def __init__(self, classname = None, fields = None):
+	def __init__(self, classname = '', fields = None):
 		global idCount
 		if classname != None:
 			self.classname = classname
@@ -99,7 +102,8 @@ class Atom:
 	
 	def __str__(self): #just some debugging tools -jaxter184
 		#return self.stringify(0)
-		return self.listFields()
+		#return self.listFields()
+		return "Atom: " +  str(self.classname) + '>'
 
 	def stringify(self, tabs): #just some debugging tools -jaxter184
 		output = ''
@@ -206,14 +210,14 @@ class Atom:
 				output += bytearray.fromhex('00000003')
 			elif typeLists.fieldList[fieldNum] == 0x14:
 				output += bytearray.fromhex('14')
-				if '' in value.fields:
+				if '' in value["type"]:
 					print("empty string: this shouldnt happen in devices and presets")
 				else:
 					output += bytearray.fromhex('01')
-					for key in value.fields["data"].fields:
+					for key in value["data"]:
 						output += bytearray.fromhex(hexPad(len(key), 8))
 						output.extend(key.encode('utf-8'))
-						output += value.fields["data"].fields[key].encode()
+						output += value["data"][key].encode()
 				output += bytearray.fromhex('00')
 			elif typeLists.fieldList[fieldNum] == 0x15:
 				output += bytearray.fromhex('15')

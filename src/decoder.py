@@ -141,26 +141,24 @@ def parseField(text):
 		return tempList
 	elif parseType == 0x14:	#map string
 		#field += 'type : "map<string,object>",\n' + 'data :\n' + '{\n'
-		object = atoms.Atom()
+		out = {"type": '', "data": {}}
 		string = ''
-		mapping = atoms.Atom()
 		parseType2 = (text[offset])
 		offset += 1
 		if parseType2 == 0x1:
-			object.add_field("type", "map<string,object>")
+			out["type"] = "map<string,object>"
 			stringLength = intConv(text[offset:offset+4])
 			offset += 4
 			string = bigChr(text[offset:offset+stringLength])
 			offset += stringLength
-			mapping.add_field(string, getClass(text))
+			out["data"][string] = getClass(text)
 			offset+=1
 		elif parseType2 == 0x0:
-			object.add_field("type", "map<string,object>")
-			mapping.add_field('', None)
+			out["type"] = "map<string,object>"
+			out["data"][''] = None
 		else:
-			object.add_field("type", "unknown")
-		object.add_field("data", mapping)
-		return object
+			out["type"] = "unknown"
+		return out
 	elif parseType == 0x15:	#UUID
 		value = str(uuid.UUID(bytes=text[offset:offset+16]))
 		offset += 16
