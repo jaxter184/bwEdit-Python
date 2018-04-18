@@ -1,0 +1,3 @@
+*.pyc
+*.bwdevice
+output/flattened.txt
