@@ -11,7 +11,7 @@ classExtract = 0 #change this to 0 for regular operation and 1 for class extract
 			 
 def magic(name, directory): #decodes then reencodes a single file
 	global extractedClasses, extractedFields
-	device_data = fs.read_binary(directory + '\\' + name)
+	device_data = fs.read_binary(os.path.join(directory, name))
 	header = device_data[:40].decode("utf-8") #'BtWg00010001008d000016a00000000000000000'
 	if (header[11] == '2'):
 		if (classExtract):

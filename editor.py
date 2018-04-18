@@ -1,11 +1,12 @@
 import tkinter as tk
 import random
 import math
+import copy
 from tkinter import ttk
 from tkinter import filedialog
 from src import decoder, encoder
 from src.lib import fs, util, atoms
-from src.lib.luts import nodes
+from src.lib.luts import nodes, typeLists
 from src.nitro import nitro
 import os
 
@@ -27,13 +28,20 @@ NODECOL = "#fff"
 BASECOL = "#414141"
 ACCCOL1 = "#535353"
 ACCCOL2 = "#888"
+ACCCOL3 = "#3dd9ff"
 INSP_WIDTH = 50
 
 class Application(tk.Tk):
 	def __init__(self, *args, **kwargs):
 		tk.Tk.__init__(self, *args, **kwargs)
 		
-		tk.Tk.iconbitmap(self, default="bitwig.ico")
+		try:
+			tk.Tk.iconbitmap(self, default="bwEdit.ico")
+		except:
+			try:
+				tk.Tk.iconbitmap(self, default="@bwEdit.xbm")
+			except:
+				pass
 		tk.Tk.wm_title(self, "bwEdit")
 		
 		top = self.winfo_toplevel() #menu bar
@@ -140,16 +148,26 @@ class EditorCanvas(tk.Frame):
 		self.size = 12
 		self._dragged = False
 		self._inspector_active = False
+		self._rclicked = None
+		self._manager_active = False
+		self._input_active = False
 		
-		self.canvas.tag_bind("case||name||deco", "<ButtonPress-1>", self.on_token_press)
-		self.canvas.tag_bind("case||name||deco", "<ButtonRelease-1>", self.on_token_release)
-		self.canvas.tag_bind("case||name||deco", "<B1-Motion>", self.on_token_motion)
+		self.canvas.tag_bind("case||name||deco", "<ButtonPress-1>", self._on_atom_press)
+		self.canvas.tag_bind("case||name||deco", "<ButtonRelease-1>", self._on_atom_release)
+		self.canvas.tag_bind("case||name||deco", "<B1-Motion>", self._on_atom_motion)
+		self.canvas.tag_bind("case||name||deco", "<ButtonPress-3>", self.on_atom_rc_press)
+		self.canvas.tag_bind("case||name||deco", "<ButtonRelease-3>", self.on_atom_rc_release)
+		self.canvas.tag_bind("delete", "<ButtonPress-1>", self._on_del_press)
+		self.canvas.tag_bind("delete", "<ButtonRelease-1>", self._on_del_release)
+		self.canvas.tag_bind("exportnitro", "<ButtonPress-1>", self._on_export_nitro_press)
+		self.canvas.tag_bind("exportnitro", "<ButtonRelease-1>", self._on_export_nitro_release)
 		self.canvas.tag_bind("inspector", "<ButtonPress-1>", self.on_inspector_click)
 		self.canvas.tag_bind("port", "<ButtonPress-1>", self.on_port_press)
 		self.canvas.tag_bind("conn", "<ButtonPress-1>", self.delete_line)
 		self.canvas.bind("<Motion>", self.on_move)
 		self.canvas.bind("<ButtonPress-1>", self.on_click)
 		self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+		self.canvas.bind_all("<Return>", self._on_enter)
 	
 	def _on_mousewheel(self, event):
 		self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
@@ -197,11 +215,14 @@ class EditorCanvas(tk.Frame):
 		#print(self._drag_data)
 		clickedOn = self.canvas.find_withtag("current")
 		currentTags = self.canvas.gettags(clickedOn)
-		id = int(currentTags[1][2:])
+		#id = int(currentTags[1][2:])
+		id = obj.id
 		if overwrite:
 			self.canvas.delete("inspector")
 			self.listList = []
 			self.listNum = 0
+		self.canvas.delete("manager")
+		self._manager_active = False
 		self._inspector_active = True
 		x,y = self.canvas.canvasx(eX), self.canvas.canvasy(eY)
 		inspWind = self.canvas.create_rectangle(x, y, x+10, y+10, outline=LINE_COL, fill=BASECOL, tags=("grapheditor","id"+str(id), "4pt", "inspwind", "inspector")) #id might be problematic for lists
@@ -226,7 +247,7 @@ class EditorCanvas(tk.Frame):
 			textBounds = self.canvas.bbox(canvasText)
 			maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
 			iterate = obj.fields
-		for fields in iterate:
+		for fields in iterate: #TODO clean this up
 			tags = ("grapheditor","id"+str(id), "2pt", "text",)
 			if "n_list" in currentTags:
 				if type(fields) in (int, str, float, bool, None,):
@@ -245,7 +266,7 @@ class EditorCanvas(tk.Frame):
 						text = self.atomList[fields.id].fields["source_component(248)"].id
 					else:
 						text = "<" + self.atomList[fields.id].classname + ">"
-					tags+=(self.atomList[fields.id].id, "nestedInsp",)
+					tags+=(fields.id, "nestedInsp",)
 				elif type(fields) in (list,):
 					text = "[" + fields + "]"
 					self.listList.append(fields)
@@ -261,6 +282,7 @@ class EditorCanvas(tk.Frame):
 						text = "{" + fields + "}"
 					else:
 						text = fields + ": " + str(field)
+					tags += ("variable", fields)
 				elif type(field) in (atoms.Atom, atoms.Reference):
 					text = "<" + fields + ">"
 					tags+=(field.id, "nestedInsp",)
@@ -285,12 +307,50 @@ class EditorCanvas(tk.Frame):
 	def on_inspector_click(self, event):
 		clickedOn = self.canvas.find_withtag("current")
 		tags = self.canvas.gettags(clickedOn)
-		if "nestedInsp" in tags:
+		if "variable" in tags:
+			x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+			id = int(tags[1][2:])
+			field = tags[5]
+			self._draw_modifier(id, x, y, field)
+			self._input_active = True
+		elif "nestedInsp" in tags:
 			#print(self.data_info)
 			if "n_list" in tags:
 				self._draw_inspector(self.listList[int(tags[4])], event.x, event.y, False)
 			else:
 				self._draw_inspector(self.atomList[int(tags[4])], event.x, event.y, False)
+	
+	def _on_enter(self, event):
+		print("enter")
+		if self._input_active:
+			#parse the input
+			fieldNum = int(''.join([s for s in self._input_data[1] if s.isdigit()]))
+			print(fieldNum)
+			type = typeLists.fieldList[fieldNum]
+			if type == 1:
+				self.atomList[self._input_data[0]].fields[self._input_data[1]] = int(self._input.get())
+			elif type == 5:
+				new = True
+				if self._input.get().tolower() in ('0','f','false','',):
+					new = False
+				self.atomList[self._input_data[0]].fields[self._input_data[1]] = bool(new)
+			elif type == 6 or type == 7:
+				self.atomList[self._input_data[0]].fields[self._input_data[1]] = float(self._input.get())
+			elif type == 8:
+				self.atomList[self._input_data[0]].fields[self._input_data[1]] = str(self._input.get())
+			else:
+				print("modification of this parameter is not yet permitted")
+			self.canvas.delete("input")
+			self._input_active = False
+			#TODO redraw inspector?
+	
+	def _draw_modifier(self, id, x, y, field,):
+		self.canvas.delete("input")
+		self._input = tk.Entry(self.canvas)
+		self.canvas.create_window(x, y, window = self._input, anchor = "nw", tags = ("grapheditor","id"+str(id), "2pt", "input",))
+		self._input_data = (id, field,)
+		#print(id)
+		#print("mod", self.atomList[id].fields[field])
 
 	def makeRect(self, className, x, y, id, name = None, w = 0, h = 0, nodesI = None, nodesO = None, b = BORDER, v_offset = TOTAL_OFF, vertical = False, center = False):
 		if "vertical" in nodes.list[className]:
@@ -338,9 +398,9 @@ class EditorCanvas(tk.Frame):
 		for outports in range(nodesO):
 			self.canvas.create_oval(x+w-DOT_SIZE, y+(PORT_OFF)*(outports)-DOT_SIZE+v_offset, x+w+DOT_SIZE, y+(PORT_OFF)*(outports)+DOT_SIZE+v_offset, activeoutline = "black" , outline=NODECOL, fill=NODECOL ,tags=("grapheditor","id"+str(id), "4pt", "port", "out", str(outports)))
 
-	def on_token_press(self, event):
+	def _on_atom_press(self, event):
 		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
-		self._drag_data["item"] = self.canvas.gettags(*self.canvas.find_closest(x, y))[1] #id is tags[1]
+		self._drag_data["item"] = self.canvas.gettags(self.canvas.find_withtag("current"))[1] #id is tags[1]
 		self._dragged = False
 		for item in self.canvas.find_withtag(self._drag_data["item"]):
 			c = self.canvas.coords(item)
@@ -351,7 +411,7 @@ class EditorCanvas(tk.Frame):
 				xySelect = not xySelect
 			self._drag_data["relPos"][item] = output
 
-	def on_token_release(self, event):
+	def _on_atom_release(self, event):
 		if self._dragged:
 			#add layer correction (atoms with a smaller y position should be on a lower canvas layer)
 			rPos = self._drag_data["relPos"][self.canvas.find_withtag(self._drag_data["item"]+"&&case")[0]]
@@ -367,7 +427,7 @@ class EditorCanvas(tk.Frame):
 		self._drag_data["x"] = 0
 		self._drag_data["y"] = 0
 
-	def on_token_motion(self, event):
+	def _on_atom_motion(self, event):
 		self._dragged = True
 		eX,eY = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
 		xOff, yOff = eX-event.x, eY-event.y
@@ -407,6 +467,101 @@ class EditorCanvas(tk.Frame):
 				newC.append((x-rPos[0] if xySelect else y-rPos[1])+i)
 				xySelect = not xySelect
 			self.canvas.coords(item, *newC)
+
+	def on_atom_rc_press(self, event):
+		rclicked = self.canvas.find_withtag("current")
+		self._rclicked = rclicked
+		print(rclicked)
+	
+	def on_atom_rc_release(self, event):
+		rclicked = self.canvas.find_withtag("current")
+		if rclicked == self._rclicked:
+			id = int(self.canvas.gettags(rclicked)[1][2:])
+			self._draw_manager(self.atomList[id], event.x, event.y)
+		self._rclicked = None
+		print(rclicked)
+
+	def _on_del_press(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		clicked = self.canvas.find_closest(x, y)
+		self._deleting = clicked
+	
+	def _on_del_release(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		clicked = self.canvas.find_closest(x, y)
+		if clicked == self._deleting:
+			id = int(self.canvas.gettags(clicked)[1][2:])
+			self.delAtom(id)
+		self._deleting = None
+		
+	def _on_export_nitro_press(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		clicked = self.canvas.find_closest(x, y)
+		self._exporting_nitro = clicked
+	
+	def _on_export_nitro_release(self, event):
+		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
+		clicked = self.canvas.find_closest(x, y)
+		if clicked == self._exporting_nitro:
+			id = int(self.canvas.gettags(clicked)[1][2:])
+			output = self.atomList[id].fields["code(6264)"].replace('\\n','\n')
+			with tk.filedialog.asksaveasfile(mode='w', defaultextension=".nitro") as f:
+				if f is None: #in case of cancel
+					self._exporting_nitro = None
+					return
+				f.write(output)
+
+		self._exporting_nitro = None
+	
+	def _draw_manager(self, obj, eX,eY):
+		clickedOn = self.canvas.find_withtag("current")
+		currentTags = self.canvas.gettags(clickedOn)
+		id = int(currentTags[1][2:])
+		self.canvas.delete("manager")
+		self.canvas.delete("inspector")
+		self._manager_active = True
+		self._inspector_active = True
+		self._currently_managed = True
+		x,y = self.canvas.canvasx(eX), self.canvas.canvasy(eY)
+		manaWind = self.canvas.create_rectangle(x, y, x+10, y+10, outline=ACCCOL3, fill=BASECOL, tags=("grapheditor","id"+str(id), "4pt", "manawind", "manager")) #id might be problematic for lists
+		maxWidth = 5
+		fieldOffset = 1
+		
+		#add name
+		name = obj.classname
+		i = 0
+		while i < len(name):
+			if name[i] == '.':
+				break
+			i+=1
+		else:
+			i = -1;
+		name = name[i+1:] + " id: " + str(obj.id)
+		canvasText = self.canvas.create_text(x+BORDER,y+BORDER+BOL_FONT[1],fill="white",font=BOL_FONT, text=name, anchor="w",
+															tags=("grapheditor","id"+str(id), "2pt", "text", "manager",))
+		textBounds = self.canvas.bbox(canvasText)
+		maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
+		
+		#add delete TODO don't render delete button for inports
+		text = self.canvas.create_text(x+BORDER,y+MED_FONT[1]*2*fieldOffset+BOL_FONT[1],fill="white",font=MED_FONT, text="DELETE ATOM", anchor="w",
+															tags=("grapheditor","id"+str(id), "2pt", "text", "delete", "manager",))
+		textBounds = self.canvas.bbox(text)
+		maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
+		fieldOffset += 1
+		
+		#add code export for nitro
+		if obj.classname == 'float_common_atoms.nitro_atom(1721)':
+			text = self.canvas.create_text(x+BORDER,y+MED_FONT[1]*2*fieldOffset+BOL_FONT[1],fill="white",font=MED_FONT, text="Export nitro code", anchor="w",
+																tags=("grapheditor","id"+str(id), "2pt", "text", "exportnitro", "manager",))
+			textBounds = self.canvas.bbox(text)
+			maxWidth = max(textBounds[2] - textBounds[0], maxWidth)
+			fieldOffset += 1
+		
+		#resize manager window to text
+		c = self.canvas.coords(manaWind)
+		self.canvas.coords(manaWind, c[0], c[1], x+maxWidth+BORDER*2, y+fieldOffset*2*MED_FONT[1] + BORDER + BOL_FONT[1])
+		#print(id)
+		#print(self.data_info[id])
 
 	def delete_line(self, event): #deletes the connection that is currently being clicked on
 		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
@@ -510,6 +665,10 @@ class EditorCanvas(tk.Frame):
 		if self._inspector_active:
 			self.canvas.delete("inspector")
 			self._inspector_active = False
+			self.canvas.delete("input")
+		if self._manager_active:
+			self.canvas.delete("manager")
+			self._manager_active = False
 
 	def load(self, file):
 		self.data = file
@@ -519,15 +678,17 @@ class EditorCanvas(tk.Frame):
 		objLocs = []
 		objSize = []
 		self.linePorts = {}
+		self._currentlyConnecting = False
 		
 		self.buffers = []
 		self.inports = []
 
+		self.atomList = []
 		self.portList = []
 		self.RortList = []
-		
-		#self.data[0].id = 1
-		self.atomList = []
+		self.paneList = []
+		self.panelMap = [] #index is object, stores list of references
+
 		#flatten data
 		for eachField in ("child_components(173)","panels(6213)","proxy_in_ports(177)","proxy_out_ports(178)"):
 			for item in range(len(self.data[1].fields[eachField])):
@@ -535,20 +696,11 @@ class EditorCanvas(tk.Frame):
 					self.atomList.append(self.data[1].fields[eachField][item])
 		self.flattenData(self.atomList, True)
 		
-		#draw atoms
+		#draw atoms and add connections
 		for item in self.atomList:
-			if isinstance(item, atoms.Atom):
-				if "settings(6194)" in item.fields:
-					self._draw_atom(item)
-					#self.data_info[item.id] = item
-			elif isinstance(item, atoms.Reference):
-				pass
-			elif item != None:
-				print("jerror: non-atom-like object found (131)", item)
-			self.drawKids(item)
-		#print(self.portList)
+			if item:
+				self.drawKids(item)
 		
-		if DEBUG: print("debug 2")
 		#draw connections
 		self._add_connections()
 		
@@ -557,18 +709,9 @@ class EditorCanvas(tk.Frame):
 		self.canvas.config(scrollregion=self.canvas.bbox("all"))
 
 	def drawKids(self, child,):
-		if not child:
-			return
-		'''try:
-			for field in child.fields:
-				if isinstance(child.fields[field], atoms.Atom):
-					#print(child.fields[field].id)
-					self.data_info[child.fields[field].id] = child.fields[field]
-					self.drawKids(child.fields[field])
-		except:
-			pass'''
 		if isinstance(child, atoms.Atom):
-			if "settings(6194)" in child.fields:
+			if "settings(6194)" in child.fields:#if its a regular atom
+				self._draw_atom(child)
 				kid = self.atomList[child.fields["settings(6194)"].id].fields["inport_connections(614)"]
 				inportCount = 0
 				for i in kid:
@@ -577,11 +720,14 @@ class EditorCanvas(tk.Frame):
 						obj = self.atomList[inportConn.fields["source_component(248)"].id]
 						if isinstance(obj, atoms.Atom):
 							if "settings(6194)" in obj.fields:
-								#self._draw_atom(obj)
-								#self.data_info[obj.id] = obj
 								self.addPort(child.id, inportCount, obj.id, inportConn.fields["outport_index(249)"])
-								#self.drawKids(obj)
 					inportCount += 1
+			elif "layout_settings(6226)" in child.fields:
+				if "data_model(6220)" in child.fields and child.fields["data_model(6220)"]:#if it depends on a control
+					id = child.fields["data_model(6220)"].id
+					while len(self.panelMap) < id+1:
+						self.panelMap.append([])
+					self.panelMap[id].append(self.atomList.index(child))
 
 	def addPort(self, dID, dPort, sID, sPort,): #d is drain, s is source
 		listLengths = max(sID+1,dID+1)
@@ -598,6 +744,7 @@ class EditorCanvas(tk.Frame):
 		self.RortList[sID][sPort].append((dID, dPort))
 		
 	def delPort(self, dID, dPort, sID, sPort,): #d is drain, s is source
+		#print(dID, dPort, sID, sPort)
 		if self.portList[dID][dPort] == (sID,sPort):
 			self.portList[dID][dPort] = 0
 		else:
@@ -607,6 +754,40 @@ class EditorCanvas(tk.Frame):
 			self.RortList[sID][sPort].remove((dID, dPort))
 		else:
 			print("jerror: source doesn't match drain. (400)")
+		self.canvas.delete(str(dID) +':'+ str(dPort) +','+ str(sID) +':'+ str(sPort))
+	
+	def delAtom(self, id):
+		#delete the ports
+		print(self.RortList)
+		if len(self.portList) > id:
+			for port in range(len(self.portList[id])):
+				if self.portList[id][port]:
+					self.delPort(id, port, *self.portList[id][port])
+		if len(self.RortList) > id:
+			for port in range(len(self.RortList[id])):
+				if self.RortList[id][port]:
+					for conn in range(len(self.RortList[id][port])):
+						if self.RortList[id][port][conn]:
+							print(self.RortList[id][port][conn])
+							rConn = self.atomList[self.atomList[self.RortList[id][port][conn][0]].fields["settings(6194)"].id].fields["inport_connections(614)"][self.RortList[id][port][conn][1]]
+							self.atomList[rConn.id].fields["source_component(248)"] = None
+							#print(self.RortList[id][port])
+							self.delPort(*self.RortList[id][port][conn], id, port,)
+		
+		#delete and erase the atom
+		self.atomList[id] = None
+		self.canvas.delete("id"+str(id))
+		
+		#delete panel mappings
+		if len(self.panelMap) > id:
+			for i in self.panelMap[id]:
+				self.atomList[i].fields["data_model(6220)"] = None
+		
+		#delete inport source components
+		
+		#close manager
+		self.canvas.delete("manager")
+		print("delete")
 	
 	def flattenData(self, data, isRoot = False):
 		if isinstance(data, list):
@@ -630,37 +811,6 @@ class EditorCanvas(tk.Frame):
 		elif (isinstance(data, atoms.Reference)):
 			pass
 		return data
-	
-	'''def insertSecondLayer(self): #adds the objects from buffer and inports at the first occurence of their reference points
-		for list in (self.buffers, self.inports,):
-			for obj in list:
-				doneFlag = False
-				self.atomList, doneFlag = self.insertSLHelper(obj, self.atomList, doneFlag)
-				if not doneFlag:
-					print("couldnt find a reference")
-	
-	def insertSLHelper(self, obj, input, doneFlag):
-		if isinstance(input, list):
-			for item in range(len(input)):
-				if isinstance(input[item], atoms.Reference):
-					if obj.id == input[item].id:
-						doneFlag = True
-						input[item] = obj
-				elif isinstance(input[item], atoms.Atom):
-					input[item], doneFlag = self.insertSLHelper(obj, input[item], doneFlag)
-				if doneFlag:
-					break
-		elif isinstance(input, atoms.Atom):
-			for item in input.fields:
-				if isinstance(atom.fields[item], atoms.Reference):
-					if obj.id == input.fields[item].id:
-						doneFlag = True
-						input.fields[item] = obj
-				elif isinstance(input.fields[item], atoms.Atom) or isinstance(input.fields[item], list):
-					input.fields[item], doneFlag = self.insertSLHelper(obj, input.fields[item], doneFlag)
-				if doneFlag:
-					break
-		return input, doneFlag'''
 
 	def renumberItem(self, element): #renumbers an atom or list of atoms. should eventually be a function of atoms. or maybe not? since i do it on a list?
 		if isinstance(element, list):
@@ -672,32 +822,21 @@ class EditorCanvas(tk.Frame):
 				output.append(self.renumberItem(item))
 			return output
 		elif isinstance(element, atoms.Atom):
-			#print(element.id, element)
+			print(element.id, element)
 			self.refIDs[element.id] = len(self.refIDs)
 			element.setID(self.refIDs[element.id])
 			for eachField in element.fields:
 				field = element.fields[eachField]
 				self.renumberItem(field)
 		elif isinstance(element, atoms.Reference):
+			if not element.id in self.refIDs:
+				print("element not already here")
+				return None
 			element.setID(self.refIDs[element.id])
 		return element
-
-	'''def generateReverseEdgeList(self):
-		self.reverseList = {}
-		for item in self.data[1].fields["child_components(173)"]:
-			numInports = 0
-			for inport in item.fields["settings(6194)"].fields["inport_connections(614)"]:
-				inportSource = inport.fields["source_component(248)"]
-				if inportSource:
-					outport = inport.fields["outport_index(249)"]
-					if isinstance(inportSource, atoms.Atom):
-						self.reverseList[inportSource.id][outport] = (item.id, numInports) #double check later
-					elif isinstance(inportSource, atoms.Reference):
-						self.reverseList[inportSource.id][outport] = (item.id, numInports)
-				numInports += 1'''
 	
 	def treeifyData(self): #makes 3 trees: child_components, panels, and outports. outports is a singleton tree, but is used to root the child_components tree.
-		self.tempAtomList = [i for i in self.atomList]
+		self.tempAtomList = copy.deepcopy(self.atomList)
 		self.refList = []
 		subClasses = {"child_components(173)":[],"panels(6213)":[],"proxy_in_ports(177)":[],"proxy_out_ports(178)":[],}
 
@@ -722,10 +861,16 @@ class EditorCanvas(tk.Frame):
 						break
 				else:	#if there are no outports
 					if self.tempAtomList[i].classname == "float_core.proxy_in_port_component(154)":
-						subClasses["proxy_in_ports(177)"].append(self.tempAtomList[i]) #get straggling unnecessary inports
+						type = self.tempAtomList[self.tempAtomList[i].fields["port(301)"].id].classname
+						if type == "float_core.audio_port(242)":
+							subClasses["proxy_in_ports(177)"].insert(0, self.tempAtomList[i]) #get inport references
+						elif type == "float_core.note_port(61)":
+							subClasses["proxy_in_ports(177)"].append(self.tempAtomList[i])
+						else:
+							print("jerror: inport that isnt note or audio 1777")
 						self.tempAtomList[i] = None
 					elif self.tempAtomList[i].classname == "float_common_atoms.buffer_writer_atom(364)": #prepend buffer writers
-						subClasses["child_components(173)"].insert(0,self.tempAtomList[i]) #append this root
+						subClasses["child_components(173)"].insert(0,self.tempAtomList[i]) #prepend this root
 						self.tempAtomList[i] = None
 					else:
 						subClasses["child_components(173)"].append(self.tempAtomList[i]) #append this root
@@ -740,7 +885,11 @@ class EditorCanvas(tk.Frame):
 		newRefList = []
 		for ref in self.refList:
 			if self.atomList[ref.id].classname == "float_core.proxy_in_port_component(154)":
-				subClasses["proxy_in_ports(177)"].insert(0,atoms.Reference(ref.id))
+				type = self.atomList[self.atomList[ref.id].fields["port(301)"].id].classname
+				if type == "float_core.audio_port(242)":
+					subClasses["proxy_in_ports(177)"].insert(0, atoms.Reference(ref.id))
+				elif type == "float_core.note_port(61)":
+					subClasses["proxy_in_ports(177)"].append(atoms.Reference(ref.id))
 				continue
 			elif ref.id in [j.id for j in subClasses["child_components(173)"]]: #instead of subClasses[], maybe 'lists for lists in subClasses'?
 				continue

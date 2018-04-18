@@ -206,7 +206,7 @@ class Atom:
 						output += bytearray.fromhex('00000001')
 						output += item.encode()
 					else:
-						print("something went wrong in atoms.py, the oopsie woopsie fucky wucky code is \'not object list\'")
+						print("something went wrong in atoms.py. \'not object list\'")
 				output += bytearray.fromhex('00000003')
 			elif typeLists.fieldList[fieldNum] == 0x14:
 				output += bytearray.fromhex('14')
