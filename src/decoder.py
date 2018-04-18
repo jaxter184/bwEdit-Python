@@ -59,11 +59,11 @@ def parseField(text):
 		offset += 1
 		return bool(text[offset-1])
 	elif parseType == 0x06:	#float
-		flVal = struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0]
+		flVal = struct.unpack('>f', text[offset:offset + 4])[0]
 		offset += 4
 		return flVal
 	elif parseType == 0x07:	#double
-		dbVal = struct.unpack('d', struct.pack('Q', intConv(text[offset:offset + 8])))[0]
+		dbVal = struct.unpack('>d', text[offset:offset + 8])[0]
 		offset += 8
 		return dbVal
 	elif parseType == 0x08:	#string
@@ -164,17 +164,10 @@ def parseField(text):
 		offset += 16
 		return value
 	elif parseType == 0x16:	#color
-		flVals = []
-		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
-		offset += 4
-		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
-		offset += 4
-		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
-		offset += 4
-		flVals.append(struct.unpack('f', struct.pack('L', intConv(text[offset:offset + 4])))[0])
-		offset += 4
-		return atoms.Color(flVals[0],flVals[1],flVals[2],flVals[3])
-	elif parseType == 0x17:	#float array
+		flVals = struct.unpack('>ffff', text[offset:offset + 16])
+		offset += 16
+		return atoms.Color(*flVals)
+	elif parseType == 0x17:	#float array (never been used before)
 		arrayLength = intConv(text[offset:offset+4])
 		offset += 4
 		offset += arrayLength*4

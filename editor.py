@@ -716,7 +716,6 @@ class EditorCanvas(tk.Frame):
 		#update scroll region
 		self.update()
 		sr = self.canvas.bbox("all")
-		print(sr)
 		p = 600
 		sr = (sr[0]-p,sr[1]-p,sr[2]+p,sr[3]+p,)
 		self.canvas.config(scrollregion=sr)
@@ -835,7 +834,7 @@ class EditorCanvas(tk.Frame):
 				output.append(self.renumberItem(item))
 			return output
 		elif isinstance(element, atoms.Atom):
-			print(element.id, element)
+			#print(element.id, element)
 			self.refIDs[element.id] = len(self.refIDs)
 			element.setID(self.refIDs[element.id])
 			for eachField in element.fields:
@@ -883,8 +882,9 @@ class EditorCanvas(tk.Frame):
 							print("jerror: inport that isnt note or audio 1777")
 						self.tempAtomList[i] = None
 					elif self.tempAtomList[i].classname == "float_common_atoms.buffer_writer_atom(364)": #prepend buffer writers
-						subClasses["child_components(173)"].insert(0,self.tempAtomList[i]) #prepend this root
-						self.tempAtomList[i] = None
+						pass
+						#subClasses["child_components(173)"].insert(0,self.tempAtomList[i]) #prepend this root
+						#self.tempAtomList[i] = None
 					else:
 						subClasses["child_components(173)"].append(self.tempAtomList[i]) #append this root
 						self.tempAtomList[i] = None
@@ -1052,6 +1052,14 @@ class EditorCanvas(tk.Frame):
 			self.canvas.create_rectangle(x+b, y+3*b+MED_FONT[1], x+w-b, y+h-b , outline=ACCCOL2, fill=ACCCOL2, tags=("grapheditor","id"+str(id), "4pt", "deco"))
 			#self.canvas.create_text(x+b+DOT_SIZE,y+b,fill="white",font=MED_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
 			self.canvas.create_text(x+b+DOT_SIZE,y+(2*b+MED_FONT[1]+h)/2,fill="white",font=THK_FONT, text=str(val), anchor="w", tags=("grapheditor","id"+str(id), "2pt", "value"))
+		elif className == 'float_common_atoms.bipolar_toggleable_decimal_value_atom(1763)':
+			name = obj.fields["name(374)"]
+			val = obj.fields["value(712)"]
+			w,h = 4*b + 8*len(name),32+4*b+MED_FONT[1]
+			self.makeRect(className, x, y, id, name=name, w=w, h=h)
+			self.canvas.create_rectangle(x+b, y+3*b+MED_FONT[1], x+w-b, y+h-b , outline=ACCCOL2, fill=ACCCOL2, tags=("grapheditor","id"+str(id), "4pt", "deco"))
+			#self.canvas.create_text(x+b+DOT_SIZE,y+b,fill="white",font=MED_FONT, text=name, anchor="nw", tags=("grapheditor","id"+str(id), "2pt", "name"))
+			self.canvas.create_text(x+b+DOT_SIZE,y+(2*b+MED_FONT[1]+h)/2,fill="white",font=THK_FONT, text=str(val)[:7], anchor="w", tags=("grapheditor","id"+str(id), "2pt", "value"))
 		
 		#constant values
 		elif className == 'float_common_atoms.constant_value_atom(314)':

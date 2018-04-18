@@ -16,6 +16,10 @@ list = {
 		"i":0,
 		"o":1,
 	},
+	'float_common_atoms.bipolar_toggleable_decimal_value_atom(1763)': {
+		"i":0,
+		"o":1,
+	},
 	'float_common_atoms.constant_value_atom(314)': {
 		"name":"ConstV",
 		"i":0,
@@ -301,9 +305,16 @@ list = {
 	},
 	'float_common_atoms.lfo_atom(410)': {
 		"name":"LFO",
-		"i":3,
+		"i":6,
 		"o":0,
+		"port_names": ["Rate","Shape","Retrig","Sync","Phase","retrig again",],
 		"vertical":None,
+	},
+	'float_common_atoms.nameable_modulation_source_atom(1929)': {
+		"name":"nameable\no->",
+		"i":1,
+		"o":0,
+		"w":80,
 	},
 	
 	#DSP
@@ -598,6 +609,12 @@ list = {
 		"w":30,
 		"vertical":None,
 	},
+	'float_core.scope_observer_component(1996)': {
+		"name":"Scope Obs",
+		"i":1,
+		"o":0,
+		"w":100,
+	},
 	
 	#notes
 	'arpeggiator_atom(1232)': {
@@ -779,8 +796,14 @@ list = {
 		"vertical":None,
 	},
 	'int_observer_atom(1234)': {
-		"name":"int observer",
+		"name":"int obs",
 		"i":4,
+		"o":0,
+		"w":80,
+	},
+	'boolean_observer_atom(2029)': {
+		"name":"boolean obs",
+		"i":1,
 		"o":0,
 		"w":120,
 	},
