@@ -1,4 +1,5 @@
 list = {
+	#values
 	'float_core.decimal_value_atom(289)': {
 		"i":0,
 		"o":1,
@@ -40,7 +41,7 @@ list = {
 		"w":60,
 	},
 	
-	
+	#atoms
 	'float_common_atoms.nitro_atom(1721)': {
 		"name":"nitro",
 		"i":12,
@@ -68,16 +69,37 @@ list = {
 		"w":30,
 		"vertical":None,
 	},
+	'float_common_atoms.delay_compensation_atom(1371)': {
+		"i":1,
+		"o":1,
+		"w":50,
+		"h":50,
+	},
 	'float_common_atoms.note_delay_compensation_atom(1435)': {
 		"i":1,
 		"o":1,
 		"w":50,
 		"h":50,
 	},
-	'float_common_atoms.delay_compensation_atom(1371)': {
+	'float_common_atoms.processing_delay_placeholder_component(1437)': {
+		"name":"Proc DelC",
 		"i":1,
 		"o":1,
-		"w":50,
+		"w":80,
+		"h":50,
+	},
+	'float_common_atoms.bool_delay_compensation_atom(2017)': {
+		"name":"Bool DelC",
+		"i":1,
+		"o":1,
+		"w":80,
+		"h":50,
+	},
+	'note_processing_delay_placeholder_component(2050)': {
+		"name":"Note DelC",
+		"i":2,
+		"o":1,
+		"w":80,
 		"h":50,
 	},
 	'float_core.modulation_source_atom(766)': {
@@ -85,6 +107,12 @@ list = {
 		"o":0,
 	},
 	'float_core.value_led_atom(189)': {
+		"i":1,
+		"o":0,
+		"w":30,
+		"h":30,
+	},
+	'float_core.note_led_atom(558)': {
 		"i":1,
 		"o":0,
 		"w":30,
@@ -98,8 +126,22 @@ list = {
 		"vertical":None,
 	},
 	'float_common_atoms.decimal_event_filter_atom(400)': {
-		"i":0,
-		"o":0,
+		"name":"DecEvent Filter",
+		"i":1,
+		"o":1,
+		"w":80,
+	},
+	'float_common_atoms.event_switch_atom(321)': {
+		"name":"Event Switch",
+		"i":2,
+		"o":1,
+		"w":80,
+	},
+	'float_common_atoms.select_atom(347)': {
+		"name":"SEL",
+		"i":3,
+		"o":1,
+		"w":50,
 	},
 	'float_common_atoms.multiplexer_atom(1188)': {
 		"name":"MUX",
@@ -123,8 +165,46 @@ list = {
 		"w":30,
 		"vertical":None,
 	},
+	'float_core.drum_pads(591)': {#draw some stuff
+		"name":"DrumPads",
+		"i":2,
+		"o":1,
+		"w":80,
+		"center":None,
+	},
+	'float_core.parallel_nested_device_chain_container(586)': {#draw some stuff
+		"name":"Layer",
+		"i":2,
+		"o":1,
+		"w":60,
+		"center":None,
+	},
+	'float_common_atoms.note_range_filter_atom(407)': {
+		"name":"Note Filter",
+		"i":5,
+		"o":1,
+		"vertical":None,
+	},
 	
 	#Math
+	'float_common_atoms.constant_multiply_atom(303)': {
+		"name":"×c",
+		"i":1,
+		"o":1,
+		"w":60,
+		"h":50, 
+	},
+	'float_common_atoms.multiply_add_atom(304)': {
+		"name":"×+",
+		"i":3,
+		"o":1,
+		"w":50,
+	},
+	'float_common_atoms.sum_atom(305)': {
+		"name":"++",
+		"o":1,
+		"w":40,
+	},
 	'float_common_atoms.constant_add_atom(308)': {
 		"name":"+c",
 		"i":1,
@@ -132,12 +212,17 @@ list = {
 		"w":60,
 		"h":50, 
 	},
-	'float_common_atoms.constant_multiply_atom(303)': {
-		"name":"*c",
+	'float_common_atoms.limit_range_atom(311)': {
+		"name":"Limit Range",
+		"i":3,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.abs_atom(319)': {
+		"name":"|x|",
 		"i":1,
 		"o":1,
-		"w":60,
-		"h":50, 
+		"w":40,
 	},
 	'float_common_atoms.add_atom(337)': {
 		"name":"+",
@@ -146,9 +231,9 @@ list = {
 		"w":20,
 		"h":50,
 	},
-	'float_common_atoms.multiply_atom(367)': {
-		"name":"×",
-		"i":2,
+	'float_common_atoms.compare_atom(340)': {
+		"name":">/</=",
+		"i":3,
 		"o":1,
 		"w":50,
 	},
@@ -176,17 +261,23 @@ list = {
 		"o":1,
 		"w":50,
 	},
-	'float_common_atoms.multiply_add_atom(304)': {
-		"name":"×+",
-		"i":3,
+	'float_common_atoms.and_atom(354)': {
+		"name":"max",
+		"i":2,
 		"o":1,
 		"w":50,
 	},
-	'float_common_atoms.sum_atom(305)': {
-		"name":"++",
-		"i":0,
-		"o":0,
-		"w":40,
+	'float_common_atoms.multiply_atom(367)': {
+		"name":"×",
+		"i":2,
+		"o":1,
+		"w":50,
+	},
+	'float_common_atoms.quantizer_atom(370)': {
+		"name":"quantize",
+		"i":3,
+		"o":1,
+		"w":80,
 	},
 	
 	#Control
@@ -196,12 +287,61 @@ list = {
 		"o":1,
 		"vertical":None,
 	},
+	'float_common_atoms.ahdsr_atom(466)': {
+		"name":"AHDSR",
+		"i":9,
+		"o":2,
+		"vertical":None,
+	},
+	'float_common_atoms.multiphase_lfo_atom(406)': {
+		"name":"Multi LFO",
+		"i":3,
+		"o":2,
+		"vertical":None,
+	},
+	'float_common_atoms.lfo_atom(410)': {
+		"name":"LFO",
+		"i":3,
+		"o":0,
+		"vertical":None,
+	},
 	
 	#DSP
+	'float_common_atoms.noise_atom(294)': {
+		"name":"S&H",
+		"i":0,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.sample_rate_reduction_atom(295)': {
+		"name":"S&H",
+		"i":2,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.multimode_filter_atom(312)': {
+		"name":"Multimode Filter",
+		"i":8,
+		"o":1,
+		"vertical":None,
+	},
 	'float_common_atoms.sample_player_atom(330)': {
 		"name":"Sampler",
 		"i":6,
 		"o":4,
+		"vertical":None,
+	},
+	'float_common_atoms.sine_oscillator_atom(324)': {
+		"name":"Sine",
+		"i":1,
+		"o":1,
+		"w":50,
+		"center":None,
+	},
+	'float_common_atoms.dynamics_gain_computer_atom(335)': {
+		"name":"Dynamics Gain Coef",
+		"i":7,
+		"o":1,
 		"vertical":None,
 	},
 	'float_common_atoms.nested_allpass_filter_atom(336)': {
@@ -222,11 +362,30 @@ list = {
 		"o":1,
 		"vertical":None,
 	},
+	'float_common_atoms.allpass_filter_atom(363)': {
+		"name":"ALLPASS",
+		"i":3,
+		"o":1,
+		"vertical":None,
+	},
 	'float_common_atoms.biquad_coefficient_atom(365)': {
-		"name":"BiQ C",
+		"name":"BiQ Coef",
+		"i":4,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.mute_atom(395)': {
+		"name":"Mute",
 		"i":2,
 		"o":1,
 		"vertical":None,
+	},
+	'float_common_atoms.frequency_shifter_atom(409)': {
+		"name":"FreqShift",
+		"i":2,
+		"o":1,
+		"w":80,
+		"center":None,
 	},
 	'float_common_atoms.surge_classic_oscillator_atom(491)': {
 		"name":"SURGE",
@@ -240,17 +399,43 @@ list = {
 		"o":2,
 		"vertical":None,
 	},
+	'float_common_atoms.fixed_delay_atom(564)': {
+		"name":"Fixed Delay",
+		"i":1,
+		"o":1,
+		"w":100,
+	},
+	'float_common_atoms.limiter_gain_computer_atom(566)': {
+		"name":"Lim Gain Coef",
+		"i":4,
+		"o":1,
+		"vertical":None,
+	},
 	'float_common_atoms.svf_filter_atom(578)': {
 		"name":"FILTER",
 		"i":5,
 		"o":1,
 		"vertical":None,
 	},
-	'float_common_atoms.allpass_filter_atom(363)': {
-		"name":"ALLPASS",
-		"i":3,
+	'float_common_atoms.high_cut_atom(600)': {
+		"name":"HiCut",
+		"i":2,
 		"o":1,
+		"w":50,
+		"center":None,
+	},
+	'float_common_atoms.phasemod_oscillator_bank_atom(778)': {
+		"name":"Phasemod Osc Bank",
+		"i":9,
+		"o":4,
 		"vertical":None,
+	},
+	'float_common_atoms.note_pitch_atom(1158)': {
+		"name":"Note Shift",
+		"i":2,
+		"o":1,
+		"w":90,
+		"center":None,
 	},
 	
 	#Components
@@ -271,12 +456,11 @@ list = {
 		"o":2,
 	},
 	'float_core.spectrum_analyser_component(1851)': {
-		"name":"FFT",
+		"name":"Spectrum Analyser",
 		"i":1,
 		"o":0,
-		"w":50,
-		"h":50,
-		"vertical":None,
+		"w":140,
+		"center":None,
 	},
 	'float_common_atoms.audio_switcher_atom(401)': {
 		"name":"AudioSW",
@@ -293,11 +477,22 @@ list = {
 		"vertical":None,
 	},
 	'float_core.audio_sidechain_routing_component(857)': {
-		"name":"SChain",
+		"name":"Audio SC",
 		"i":1,
 		"o":1,
-		"w":30,
-		"vertical":None,
+		"w":70,
+	},
+	'float_core.note_sidechain_routing_component(860)': {
+		"name":"Note SC",
+		"i":1,
+		"o":1,
+		"w":70,
+	},
+	'float_common_atoms.data_array_component(1870)': {
+		"name":"Data Array",
+		"i":1,
+		"o":1,
+		"w":80,
 	},
 	'float_common_atoms.gain_detector_atom(545)': {
 		"name":"Gain Detect",
@@ -317,11 +512,66 @@ list = {
 		"o":0,
 		"w":75,
 	},
+	'float_core.audio_out_routing_component(858)': {
+		"name":"Audio Out",
+		"i":1,
+		"o":1,
+		"w":80,
+	},
+	'float_core.audio_in_routing_component(859)': {
+		"name":"Audio In",
+		"i":1,
+		"o":1,
+		"w":80,
+	},
+	'float_core.midi_out_routing_component(863)': {
+		"name":"Midi Out",
+		"i":2,
+		"o":1,
+		"w":80,
+	},
+	'float_core.midi_in_routing_component(864)': {
+		"name":"Midi In",
+		"i":2,
+		"o":1,
+		"w":80,
+	},
+	'float_common_atoms.user_configurable_processing_delay_placeholder_component(1438)': {
+		"name":"User PDC",
+		"i":1,
+		"o":1,
+		"w":80,
+	},
+	'float_common_atoms.svg_image_component(584)': {
+		"name":"SVG",
+		"i":0,
+		"o":0,
+		"w":30,
+		"center":None,
+	},
 	'float_common_atoms.label_component(374)': {
 		"name":"LABEL",
 		"i":0,
 		"o":0,
 		"w":60,
+	},
+	'float_common_atoms.boolean_panel_value(1751)': {
+		"name":"BOOLEAN",
+		"i":0,
+		"o":0,
+		"w":60,
+	},
+	'float_common_atoms.string_panel_value(1754)': {
+		"name":"STRING",
+		"i":0,
+		"o":0,
+		"w":60,
+	},
+	'float_common_atoms.transport_component(1839)': {
+		"name":"Transport",
+		"i":0,
+		"o":9,
+		"vertical":None,
 	},
 	'float_core.trigger_atom(239)': {
 		"name":"Trigger",
@@ -338,6 +588,33 @@ list = {
 	'float_common_atoms.step_sequencer_atom(1170)': {
 		"name":"Step Sequencer",
 		"i":5,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.slew_rate_atom(316)': {
+		"name":"Slew",
+		"i":2,
+		"o":1,
+		"w":30,
+		"vertical":None,
+	},
+	
+	#notes
+	'arpeggiator_atom(1232)': {
+		"name":"ARP(ugly)",
+		"i":40,
+		"o":2,
+		"vertical":None,
+	},
+	'float_common_atoms.diatonic_note_transpose_atom(1159)': {
+		"name":"Diatonic Transposer",
+		"i":11,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.pitch_class_mapping_atom(1153)': {
+		"name":"Pitch Mapper",
+		"i":15,
 		"o":1,
 		"vertical":None,
 	},
@@ -381,6 +658,14 @@ list = {
 		"center":None,
 		#"shape":"hex",
 	},
+	'float_common_atoms.int_to_bool_atom(769)': {
+		"name":"int→bool",
+		"i":1,
+		"o":1,
+		"w":60,
+		"center":None,
+		#"shape":"hex",
+	},
 	'float_common_atoms.note_event_to_decimal_event_atom(787)': {
 		"name":"NE→DE",
 		"i":2,
@@ -390,6 +675,7 @@ list = {
 		#"shape":"hex",
 	},
 	
+	#misc/unknown
 	'float_common_atoms.event_repeater_atom(414)': {
 		"name":"E Repeat",
 		"i":3,
@@ -421,7 +707,13 @@ list = {
 		"vertical":None,
 	},
 	'float_common_atoms.moving_average_filter_atom(565)': {
-		"name":"AvgFilt",
+		"name":"MovingAvg",
+		"i":1,
+		"o":1,
+		"w":60,
+	},
+	'float_common_atoms.moving_maximum_filter_atom(567)': {
+		"name":"MovingMax",
 		"i":1,
 		"o":1,
 		"w":60,
@@ -485,5 +777,57 @@ list = {
 		"i":4,
 		"o":0,
 		"vertical":None,
+	},
+	'int_observer_atom(1234)': {
+		"name":"int observer",
+		"i":4,
+		"o":0,
+		"w":120,
+	},
+	'effect_selector(2067)': {
+		"name":"FX Select",
+		"i":2,
+		"o":1,
+		"w":80,
+		"center":None,
+	},
+	'instrument_selector(2068)': {
+		"name":"Inst Select",
+		"i":2,
+		"o":1,
+		"w":80,
+		"center":None,
+	},
+	'gate_detector_atom(1235)': {
+		"name":"Gate Detect",
+		"i":4,
+		"o":1,
+		"vertical":None,
+	},
+	'note_generator_atom(1236)': {
+		"name":"Note Gen",
+		"i":3,
+		"o":1,
+		"vertical":None,
+	},
+	'float_common_atoms.sampler_resource_component(529)': {
+		"name":"Sampler Resource",
+		"i":0,
+		"o":1,
+		"w":150,
+	},
+	'float_common_atoms.fft_atom(1847)': {
+		"name":"FFT",
+		"i":1,
+		"o":1,
+		"w":50,
+		"center":None,
+	},
+	'float_core.spectrum_readout_component(1853)': {
+		"name":"IFFT Display",
+		"i":1,
+		"o":0,
+		"w":100,
+		"center":None,
 	},
 }

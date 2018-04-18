@@ -6,7 +6,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from src import decoder, encoder
 from src.lib import fs, util, atoms
-from src.lib.luts import nodes, typeLists
+from src.lib.luts import nodes, typeLists, enums
 from src.nitro import nitro
 import os
 
@@ -167,10 +167,17 @@ class EditorCanvas(tk.Frame):
 		self.canvas.bind("<Motion>", self.on_move)
 		self.canvas.bind("<ButtonPress-1>", self.on_click)
 		self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+		self.canvas.bind_all("<ButtonPress-2>", self._on_mc_press)
+		self.canvas.bind_all("<B2-Motion>", self._on_mc_motion)
 		self.canvas.bind_all("<Return>", self._on_enter)
 	
 	def _on_mousewheel(self, event):
 		self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+	def _on_mc_press(self, event):
+		self.canvas.scan_mark(event.x, event.y)
+	def _on_mc_motion(self, event):
+		self.canvas.scan_dragto(event.x, event.y, gain=1)
 
 	def _add_connections(self):
 		for dID in range(len(self.portList)):
@@ -280,6 +287,8 @@ class EditorCanvas(tk.Frame):
 				if type(field) in (int, str, float, bool, None,):
 					if fields == "code(6264)":
 						text = "{" + fields + "}"
+					elif fields in enums.usesUnits:
+						text = fields + ": " + str(enums.units[field])
 					else:
 						text = fields + ": " + str(field)
 					tags += ("variable", fields)
@@ -706,7 +715,11 @@ class EditorCanvas(tk.Frame):
 		
 		#update scroll region
 		self.update()
-		self.canvas.config(scrollregion=self.canvas.bbox("all"))
+		sr = self.canvas.bbox("all")
+		print(sr)
+		p = 600
+		sr = (sr[0]-p,sr[1]-p,sr[2]+p,sr[3]+p,)
+		self.canvas.config(scrollregion=sr)
 
 	def drawKids(self, child,):
 		if isinstance(child, atoms.Atom):
@@ -1115,11 +1128,9 @@ class EditorCanvas(tk.Frame):
 
 		#other atoms
 		elif className == 'float_common_atoms.decimal_event_filter_atom(400)':
-			name = 'decFilter'
 			val1 = obj.fields["comparison(842)"]
 			val2 = obj.fields["comparison_value(843)"]
-			(w,h) = (4*b + 8*len(name),50+MED_FONT[1])
-			self.makeRect(className, x, y, id, name, w=w, h=h)
+			self.makeRect(className, x, y, id,)
 			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val1), anchor="w",
 											tags=("grapheditor","id"+str(id), "2pt", "value"))
 			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+2*MED_FONT[1],fill="white",font=THK_FONT, text=str(val2), anchor="w",
