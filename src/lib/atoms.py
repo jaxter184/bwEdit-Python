@@ -200,9 +200,12 @@ class Atom:
 			elif typeLists.fieldList[fieldNum] == 0x09:
 				if type(value) == Reference:
 					output += bytearray.fromhex('0b')
-				else:
+					output += value.encode()
+				elif type(value) == Atom:
 					output += bytearray.fromhex('09')
-				output += value.encode()
+					output += value.encode()
+				elif type(value) == NoneType:
+					output += bytearray.fromhex('0a')
 			elif typeLists.fieldList[fieldNum] == 0x12:
 				output += bytearray.fromhex('12')
 				for item in value:

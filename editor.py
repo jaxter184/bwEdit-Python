@@ -90,7 +90,11 @@ class Application(tk.Tk):
 
 	def savefile(self):
 		self.frames[MainPage].editor.treeifyData()
-		with tk.filedialog.asksaveasfile(mode='wb', defaultextension=".bw") as f:
+		with tk.filedialog.asksaveasfile(mode='wb', defaultextension=".bw", filetypes = (("All Files", "*.*"),
+																				("Bitwig Devices", "*.bwdevice"),
+																				("Bitwig Modulators", "*.bwmodulator"),
+																				("Bitwig Presets", "*.bwpreset"),
+																				)) as f:
 			if f is None: #in case of cancel
 				return
 			header = self.frames[MainPage].editor.header
@@ -272,7 +276,7 @@ class EditorCanvas(tk.Frame):
 		if len(self.portList) > idNum:
 			for i in range(len(self.portList[idNum])): #redraw incoming connections
 				inport = self.portList[idNum][i]
-				if inport:
+				if inport != None:
 					name = str(idNum) + ':' + str(i) + ',' + str(inport[0]) + ':' + str(inport[1])
 					#print("i", name)
 					current = self.canvas.coords(name)
@@ -284,12 +288,13 @@ class EditorCanvas(tk.Frame):
 				outportList = self.RortList[idNum][o]
 				if outportList:
 					for outport in outportList:
-						name = str(outport[0]) + ':' + str(outport[1]) + ',' + str(idNum) + ':' + str(o)
-						#print("o", name)
-						current = self.canvas.coords(name)
-						dist = min(abs(current[0] - current[6])/4,75) #for curvature
-						newC = (x + w, y + PORT_OFF*(o)+TOTAL_OFF)
-						self.canvas.coords(name, newC[0], newC[1], newC[0]+dist, newC[1], current[6]-dist, current[7], current[6], current[7])
+						if outport != None:
+							name = str(outport[0]) + ':' + str(outport[1]) + ',' + str(idNum) + ':' + str(o)
+							#print("o", name)
+							current = self.canvas.coords(name)
+							dist = min(abs(current[0] - current[6])/4,75) #for curvature
+							newC = (x + w, y + PORT_OFF*(o)+TOTAL_OFF)
+							self.canvas.coords(name, newC[0], newC[1], newC[0]+dist, newC[1], current[6]-dist, current[7], current[6], current[7])
 		for item in self.canvas.find_withtag(self._drag_data["item"]): #redraw cell
 			tag = self.canvas.gettags(item)[2]
 			localr = self._drag_data["relPos"][item]
@@ -326,7 +331,7 @@ class EditorCanvas(tk.Frame):
 			
 			#delete from port list
 			connData = [int(x) for x in lineIndex.replace(':',',').split(',')]
-			self.delPort(*connData)
+			self.delConn(*connData)
 			self.atomList[self.atomList[self.atomList[connData[0]].fields["settings(6194)"].id].fields["inport_connections(614)"][connData[1]].id].fields["source_component(248)"] = None
 			self.atomList[self.atomList[self.atomList[connData[0]].fields["settings(6194)"].id].fields["inport_connections(614)"][connData[1]].id].fields["outport_index(249)"] = 0
 
@@ -364,7 +369,7 @@ class EditorCanvas(tk.Frame):
 				self.canvas.tag_lower(self.canvas.create_line(sX, sY, sX+dist, sY, dX-dist, dY, dX, dY,
 												activefill = "white", width = LINE_WID, fill = LINE_COL, smooth=True, tags=('grapheditor', name, "conn")))
 				
-				self.addPort(dID,dPort,sID,sPort)
+				self.addConn(dID,dPort,sID,sPort)
 				#TODO add stuff to extend the size of the inport conn list in case there arent enough inport conns
 				while len(self.atomList[self.atomList[dID].fields["settings(6194)"].id].fields["inport_connections(614)"]) < dPort+1:
 					self.atomList[self.atomList[dID].fields["settings(6194)"].id].fields["inport_connections(614)"].append(atoms.Reference(self.addAtom('float_core.inport_connection(105)')))
@@ -522,10 +527,10 @@ class EditorCanvas(tk.Frame):
 			if type == 1:
 				self.atomList[self._input_data[0]].fields[self._input_data[1]] = int(self._input.get())
 			elif type == 5:
-				new = True
-				if self._input.get().tolower() in ('0','f','false','',):
-					new = False
-				self.atomList[self._input_data[0]].fields[self._input_data[1]] = bool(new)
+				if self._input.get().lower() in ('0','f','false'):
+					self.atomList[self._input_data[0]].fields[self._input_data[1]] = False
+				elif self._input.get().lower() in ('1','t','true'):
+					self.atomList[self._input_data[0]].fields[self._input_data[1]] = True
 			elif type == 6 or type == 7:
 				self.atomList[self._input_data[0]].fields[self._input_data[1]] = float(self._input.get())
 			elif type == 8:
@@ -714,7 +719,7 @@ class EditorCanvas(tk.Frame):
 						obj = self.atomList[inportConn.fields["source_component(248)"].id]
 						if isinstance(obj, atoms.Atom):
 							if "settings(6194)" in obj.fields:
-								self.addPort(child.id, inportCount, obj.id, inportConn.fields["outport_index(249)"])
+								self.addConn(child.id, inportCount, obj.id, inportConn.fields["outport_index(249)"])
 					inportCount += 1
 			elif "layout_settings(6226)" in child.fields:
 				if "data_model(6220)" in child.fields and child.fields["data_model(6220)"]:#if it depends on a control
@@ -723,12 +728,12 @@ class EditorCanvas(tk.Frame):
 						self.panelMap.append([])
 					self.panelMap[id].append(self.atomList.index(child))
 
-	def addPort(self, dID,dPort, sID,sPort,): #d is drain, s is source
+	def addConn(self, dID,dPort, sID,sPort,): #d is drain, s is source
 		listLengths = max(sID+1,dID+1)
 		while len(self.portList) < listLengths:
 			self.portList.append([])
 		while len(self.portList[dID]) < dPort+1:
-			self.portList[dID].append(0)
+			self.portList[dID].append(None)
 		self.portList[dID][dPort] = (sID, sPort)
 		
 		while len(self.RortList) < listLengths:
@@ -737,19 +742,33 @@ class EditorCanvas(tk.Frame):
 			self.RortList[sID].append([])
 		self.RortList[sID][sPort].append((dID, dPort))
 		
-	def delPort(self, dID,dPort, sID,sPort,): #d is drain, s is source
-		if self.portList[dID][dPort] == (sID,sPort):
-			self.portList[dID][dPort] = 0
+	def delConn(self, dID,dPort, sID,sPort,): #d is drain, s is source
+		print('before:',self.portList)
+		if len(self.portList[dID]) >= dPort+1:
+			if self.portList[dID][dPort] == (sID,sPort):
+				self.portList[dID][dPort] = None
+			else:
+				print("jerror: source doesn't match drain. (401)")
 		else:
-			print("jerror: source doesn't match drain. (400)")
+			print("inport doesn't exist (400)")
+		for i in range(len(self.portList[dID]),0,-1):#get rid of trailing 'None's
+			print('i:',i-1)
+			if self.portList[dID][i-1] == None:
+				del self.portList[dID][i-1]
+			else:
+				break
+		
 		index = -1
 		try:
 			index = self.RortList[sID][sPort].index((dID,dPort))
 		except:
-			print("jerror: source doesn't match drain. (400)")
+			print("jerror: source doesn't match drain. (402)")
 		else:
-			self.RortList[sID][sPort][index] = (0,0)
+			del self.RortList[sID][sPort][index]
+			if len(self.RortList[sID][sPort]) == 0:
+				del self.RortList[sID][sPort]
 		self.canvas.delete(str(dID) +':'+ str(dPort) +','+ str(sID) +':'+ str(sPort))
+		print('after:',self.portList)
 	
 	def addAtom(self, name,): #TODONOW do this recursively
 		#print(name,x,y,)
@@ -766,18 +785,18 @@ class EditorCanvas(tk.Frame):
 			else:
 				fieldName = names.params[i]
 			type = typeLists.fieldList[i]
-			if type == 1:
+			if type == 0x01:
 				if i == 17:
-					val = self._browser_position[1]/V_MULT
+					val = int(self._browser_position[1]/V_MULT)
 				elif i == 18:
-					val = self._browser_position[0]/H_MULT
+					val = int(self._browser_position[0]/H_MULT)
 				else:
 					val = int(0)
-			elif type == 5:
+			elif type == 0x05:
 				val = bool(0)
-			elif type in (6, 7):
+			elif type in (0x06, 0x07):
 				val = float(0)
-			elif type == 8:
+			elif type == 0x08:
 				val = 'placeholder'
 			elif type == 0x12:
 				val = []
@@ -829,10 +848,11 @@ class EditorCanvas(tk.Frame):
 	def delAtom(self, id,):
 		#delete the ports
 		#print(self.RortList)
-		if len(self.portList) > id:
+		if len(self.portList) > id+1:
 			for port in range(len(self.portList[id])):
 				if self.portList[id][port]:
-					self.delPort(id, port, *self.portList[id][port])
+					print(self.portList[id][port])
+					self.delConn(id, port, *self.portList[id][port])
 		if len(self.RortList) > id+1:
 			for port in range(len(self.RortList[id])):
 				if self.RortList[id][port]:
@@ -842,7 +862,7 @@ class EditorCanvas(tk.Frame):
 							rConn = self.atomList[self.atomList[self.RortList[id][port][conn][0]].fields["settings(6194)"].id].fields["inport_connections(614)"][self.RortList[id][port][conn][1]]
 							self.atomList[rConn.id].fields["source_component(248)"] = None
 							#print(self.RortList[id][port])
-							self.delPort(*self.RortList[id][port][conn], id, port,)
+							self.delConn(*self.RortList[id][port][conn], id, port,)
 		
 		#delete and erase the atom
 		self.atomList[id] = None
@@ -917,7 +937,10 @@ class EditorCanvas(tk.Frame):
 				continue
 			if obj.classname == "float_core.proxy_out_port_component(50)":
 				subClasses["proxy_out_ports(178)"].append(obj)
-				subClasses["child_components(173)"].append(atoms.Reference(self.portList[i][0][0]))
+				if self.portList[i] and self.portList[i][0]:
+					subClasses["child_components(173)"].append(atoms.Reference(self.portList[i][0][0]))
+				else:
+					print("nothing connected to the out port")
 				self.tempAtomList[i] = None
 			elif obj.classname == "float_core.panel(1680)":
 				subClasses["panels(6213)"].append(obj)
@@ -1096,21 +1119,21 @@ class EditorCanvas(tk.Frame):
 		#constant values
 		elif className == 'float_common_atoms.constant_value_atom(314)':
 			val = str(obj.fields["constant_value(750)"])[:5]
-			self.makeRect(className, x, y, id, h=50+MED_FONT[1])
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
-											tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.makeRect(className, x, y, id, h=50+MED_FONT[1], val=val)
+			#self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
+			#								tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 		elif className == 'float_common_atoms.constant_integer_value_atom(298)':
 			val = str(obj.fields["constant_value(720)"])
-			self.makeRect(className, x, y, id, h=50+MED_FONT[1])
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
-											tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.makeRect(className, x, y, id, h=50+MED_FONT[1], val=val)
+			#self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
+			#								tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 		elif className == 'constant_boolean_value_atom(635)':
 			val = str(obj.fields["constant_value(2738)"])
-			self.makeRect(className, x, y, id, h=50+MED_FONT[1])
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
-											tags=("grapheditor","id"+str(id), "2pt", "value"))
+			self.makeRect(className, x, y, id, h=50+MED_FONT[1], val=val)
+			#self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
+			#								tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 
 		#atoms
@@ -1182,10 +1205,10 @@ class EditorCanvas(tk.Frame):
 
 		#math
 		elif className in ('float_common_atoms.constant_add_atom(308)', 'float_common_atoms.constant_multiply_atom(303)',):
-			self.makeRect(className, x, y, id)
-			val = obj.fields["constant_value(750)"]
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
-											tags=("grapheditor","id"+str(id), "2pt", "value"))
+			val = str(obj.fields["constant_value(750)"])[:5]
+			self.makeRect(className, x, y, id, val=val)
+			#self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val), anchor="w",
+			#								tags=("grapheditor","id"+str(id), "2pt", "value"))
 			return
 		elif className == 'float_common_atoms.multiply_add_atom(304)':
 			nodesI = obj.fields["multiplier_pairs(724)"]*2 + 1

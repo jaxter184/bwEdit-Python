@@ -10,7 +10,7 @@ def countIOs(text):
 				if text[i] == '[':
 					if ']' in text[i:i+30]:
 						end = text[i:i+30].index(']')
-						print(text[i-5:i+end+5])
+						#print(text[i-5:i+end+5])
 						arraySize = text[i+1:i+end]
 						arraySize.replace('+', ' + ')
 						arraySize.replace('*', ' * ')
@@ -26,7 +26,7 @@ def countIOs(text):
 				if text[i] == '[':
 					if ']' in text[i:i+30]:
 						end = text[i:i+30].index(']')
-						print(text[i-5:i+end+5])
+						#print(text[i-5:i+end+5])
 						arraySize = text[i+1:i+end]
 						if arraySize.isdigit():
 							arraySize = int(arraySize)
