@@ -9,9 +9,15 @@ import struct
 idCount = 0
 ## Serializes all device atoms
 
-def hexPad(data, pad = 8): #probably not good style to include this in the class itself
-	value = hex(data)[2:]
-	return (pad-len(value))*'0'+value
+def hexPad(data, pad = 8):
+	if isinstance(data, bytearray):
+		return bytearray.fromhex((pad/2-len(value))*'00') + data
+	elif isinstance(data, int):
+		value = hex(data)[2:]
+		return bytearray.fromhex((pad-len(value))*'0'+value)
+	else:
+		print("jerror: incorrect input for pad prepend")
+		return data
 
 def serialize(obj, state = None):
 	if state == None:
@@ -64,7 +70,7 @@ class Reference:
 	
 	def encode(self):
 		output = bytearray(b'')
-		output += bytearray.fromhex(hexPad(self.id,8))
+		output += hexPad(self.id,8)
 		return output
 
 class Color:
@@ -78,15 +84,15 @@ class Color:
 		count = 0
 		for item in self.fields["data"]:
 			flVal = struct.unpack('<I', struct.pack('<f', item))[0]
-			output += bytearray.fromhex(hexPad(flVal,8))
+			output += hexPad(flVal,8)
 			count += 1
 		if count == 3:
-			output += bytearray.fromhex(hex(struct.unpack('<I', struct.pack('<f', 1.0))[0])[2:])
+			output += struct.pack('<f', 1.0)
 		return output
 		
 class Atom:
 
-	def __init__(self, classname = '', fields = None):
+	def __init__(self, classname = '', fields = None,):
 		global idCount
 		if classname != None:
 			self.classname = classname
@@ -94,7 +100,7 @@ class Atom:
 			self.fields = fields
 		else:
 			self.fields = OrderedDict([])
-		self.id = idCount
+		self.id = idCount #might need to make a manual override for id number
 		idCount+=1
 	
 	def setID(self, id):
@@ -105,7 +111,7 @@ class Atom:
 		#return self.listFields()
 		return "Atom: " +  str(self.classname) + '>'
 
-	def stringify(self, tabs): #just some debugging tools -jaxter184
+	def stringify(self, tabs = 0): #just some debugging tools -jaxter184
 		output = ''
 		output += tabs*'\t' + "class : " +  str(self.classname) + '\n'
 		output += tabs*'\t' + "data : " +  '\n'
@@ -155,7 +161,7 @@ class Atom:
 						#print(hex(0xFF + value + 1)[2:])
 						output += bytearray.fromhex(hex(0xFF + value + 1)[2:])
 					else:
-						output += bytearray.fromhex(hexPad(value, 2))
+						output += hexPad(value, 2)
 				elif value <= 32767 and value >= -32768:
 					output += bytearray.fromhex('02')
 					if value < 0:
@@ -163,24 +169,24 @@ class Atom:
 						#print(hex((value + (1 << 4)) % (1 << 4)))
 						output += bytearray.fromhex(hex(0xFFFF + value + 1)[2:])
 					else:
-						output += bytearray.fromhex(hexPad(value, 4))
+						output += hexPad(value, 4)
 				elif value <= 2147483647 and value >= -2147483648:
 					output += bytearray.fromhex('03')
 					if value < 0:
 						output += bytearray.fromhex(hex(0xFFFFFFFF + value + 1)[2:])
 					else:
-						output += bytearray.fromhex(hexPad(value, 8))
+						output += hexPad(value, 8)
 			elif typeLists.fieldList[fieldNum] == 0x05:
 				output += bytearray.fromhex('05')
 				output += bytearray.fromhex('01' if value else '00')
 			elif typeLists.fieldList[fieldNum] == 0x06:
 				flVal = struct.unpack('<I', struct.pack('<f', value))[0]
 				output += bytearray.fromhex('06')
-				output += bytearray.fromhex(hexPad(flVal,8))
+				output += hexPad(flVal,8)
 			elif typeLists.fieldList[fieldNum] == 0x07:
 				dbVal = struct.unpack('<Q', struct.pack('<d', value))[0]
 				output += bytearray.fromhex('07')
-				output += bytearray.fromhex(hexPad(dbVal,16))
+				output += hexPad(dbVal,16)
 			elif typeLists.fieldList[fieldNum] == 0x08:
 				output += bytearray.fromhex('08')
 				value = value.replace('\\n', '\n')
@@ -189,7 +195,7 @@ class Atom:
 					output += bytearray.fromhex(hex(0x80000000 + len(value))[2:])
 					output.extend(value.encode('utf-16be'))
 				else:
-					output += bytearray.fromhex(hexPad(len(value), 8))
+					output += hexPad(len(value), 8)
 					output.extend(value.encode('utf-8'))
 			elif typeLists.fieldList[fieldNum] == 0x09:
 				if type(value) == Reference:
@@ -215,7 +221,7 @@ class Atom:
 				else:
 					output += bytearray.fromhex('01')
 					for key in value["data"]:
-						output += bytearray.fromhex(hexPad(len(key), 8))
+						output += hexPad(len(key), 8)
 						output.extend(key.encode('utf-8'))
 						output += value["data"][key].encode()
 				output += bytearray.fromhex('00')
@@ -228,10 +234,10 @@ class Atom:
 				output += value.encode()
 			elif typeLists.fieldList[fieldNum] == 0x17:
 				output += bytearray.fromhex('17')
-				output += bytearray.fromhex(hexPad(len(value), 8))
+				output += hexPad(len(value), 8)
 				for item in value:
 					flVal = hex(struct.unpack('<I', struct.pack('<f', item))[0])[2:]
-					output += bytearray.fromhex(hexPad(flVal,8))
+					output += hexPad(flVal,8)
 			else:
 				print("jaxter stop being a lazy poop and " + str(typeLists.fieldList[fieldNum]) + " to the atom encoder")
 		return output
@@ -244,14 +250,14 @@ class Atom:
 			output.extend('meta'.encode('utf-8'))
 			for data in self.fields:
 				output += bytearray.fromhex('00000001')
-				output += bytearray.fromhex(hexPad(len(data), 8))
+				output += hexPad(len(data), 8)
 				output.extend(data.encode('utf-8'))
 				output = self.encodeField(output, data)
 			output += bytearray.fromhex('00000000')
 		else:
-			output += bytearray.fromhex(hexPad(self.extractNum(),8))
+			output += hexPad(self.extractNum(),8)
 			for data in self.fields:
-				output += bytearray.fromhex(hexPad(self.extractNum(data),8))
+				output += hexPad(self.extractNum(data),8)
 				output = self.encodeField(output, data)
 			output += bytearray.fromhex('00000000')
 		return output
@@ -262,6 +268,9 @@ class Atom:
 
 	def add_field(self, field, value): #need this to be able to add fields, making this a simpler format -jaxter184
 		self.fields[field] = value
+
+	def set_fields(self, fields): #for replacing the entire set of fields. maybe unnecessary.
+		self.fields = fields
 
 
 class Meta(Atom):

@@ -43,10 +43,29 @@ def countIOs(text):
 	return inports, outports
 	
 def getName(text):
-	index = text.find("@name") + 5
+	index = text.find("@name")
 	length = 0
-	name = text[index:index+length]
-	return name
+	if index != -1:
+		index += 7
+		while text[index + length] not in ('\\','"',):
+			length += 1
+	else:
+		index = text.find("component ")
+		if index != -1:
+			index += 10
+			while text[index + length] != '\\':
+				length += 1
+		else:
+			return "nameless nitro"
+	return text[index:index+length]
+	'''if val[0:10] == 'component ':
+				name = val[10:]
+				i=0
+				while name[i] not in ('\\', ' '):
+					i+=1
+				name = name[:i]
+				val=val[16+i:]
+			val = val[:20]'''
 
 def expression(text, exp):#exp is a list of terms TODO implement parentheses and subtraction
 	variables = {}

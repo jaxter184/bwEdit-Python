@@ -1,6 +1,6 @@
 import struct
 from collections import OrderedDict
-from src.lib.luts import tables, backupObjects, backupFields
+from src.lib.luts import names, backupObjects
 from src.lib import atoms
 import uuid
 
@@ -232,10 +232,8 @@ def getParams(text, object):
 		fieldName = ''
 		value = 'placeholder'
 		if fieldNum > 10:
-			if fieldNum in tables.params:
-				fieldName = tables.params[fieldNum] +  '(' + str(fieldNum) + ')'
-			if fieldNum in backupFields.bparams:
-				fieldName = backupFields.bparams[fieldNum] +  '(' + str(fieldNum) + ')'
+			if fieldNum in names.params:
+				fieldName = names.params[fieldNum] +  '(' + str(fieldNum) + ')'
 			else:
 				fieldName = "missing_field" +  '(' + str(fieldNum) + ')'
 				unFieldable += 1
@@ -264,8 +262,8 @@ def getClass(text):
 		return atoms.Reference(objNum)
 	else:
 		objName = ''
-		if classNum in tables.objs:
-			objName = tables.objs[classNum] + '(' + str(classNum) + ')'
+		if classNum in names.objs:
+			objName = names.objs[classNum] + '(' + str(classNum) + ')'
 		elif classNum in backupObjects.bobjs:
 			objName = backupObjects.bobjs[classNum] + '(' + str(classNum) + ')'
 		else:
