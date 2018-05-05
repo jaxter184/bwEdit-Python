@@ -31,6 +31,9 @@ ACCCOL2 = "#888"
 ACCCOL3 = "#3dd9ff"
 INSP_WIDTH = 50
 
+#TODO add ui editor
+#TODO add node name viewer
+
 class Application(tk.Tk):
 	def __init__(self, *args, **kwargs):
 		tk.Tk.__init__(self, *args, **kwargs)
@@ -90,7 +93,7 @@ class Application(tk.Tk):
 
 	def savefile(self):
 		self.frames[MainPage].editor.treeifyData()
-		with tk.filedialog.asksaveasfile(mode='wb', defaultextension=".bw", filetypes = (("All Files", "*.*"),
+		with tk.filedialog.asksaveasfile(mode='wb', defaultextension=".bw", filetypes = (("", ""), #TODO automatically find filetype
 																				("Bitwig Devices", "*.bwdevice"),
 																				("Bitwig Modulators", "*.bwmodulator"),
 																				("Bitwig Presets", "*.bwpreset"),
@@ -143,14 +146,12 @@ class EditorCanvas(tk.Frame):
 		self.canvas.config(scrollregion=self.canvas.bbox("all"))
 		
 		#self.canvas.create_oval(0,0,10,10, activeoutline = "black" , outline=NODECOL, fill=NODECOL ,tags=("poop"))
-		# this data is used to keep track of an 
-		# item being dragged
+
 		self._drag_data = {"relPos": {}, "item": None}
 		#self._new_conn_data = {"start": 0, "end": 0, "type0": '', "type1": '', "port0": '', "port1": ''}
 		self._new_conn_data = {}
 		self._selected = ''
 		self._currentlyConnecting = False
-		self.size = 12
 		self._dragged = False
 		self._inspector_active = False
 		self._input_active = False
@@ -159,7 +160,6 @@ class EditorCanvas(tk.Frame):
 		self._rclicked = None
 		self._selected = []
 		self._browser_clicked = None
-		
 		
 		self.size = 0
 		self.numLines = 0
@@ -173,7 +173,7 @@ class EditorCanvas(tk.Frame):
 		self.portList = []
 		self.RortList = []
 		self.paneList = [] #unused probably, since panels can just be stored as atoms
-		self.panelMap = [] #index is object, stores list of references
+		self.panelMap = [] #index is panel object list, stores references
 		
 		#click and button bindings
 		self.canvas.tag_bind("case||name||deco", "<ButtonPress-1>", self._on_atom_press)
@@ -370,7 +370,7 @@ class EditorCanvas(tk.Frame):
 												activefill = "white", width = LINE_WID, fill = LINE_COL, smooth=True, tags=('grapheditor', name, "conn")))
 				
 				self.addConn(dID,dPort,sID,sPort)
-				#TODO add stuff to extend the size of the inport conn list in case there arent enough inport conns
+				
 				while len(self.atomList[self.atomList[dID].fields["settings(6194)"].id].fields["inport_connections(614)"]) < dPort+1:
 					self.atomList[self.atomList[dID].fields["settings(6194)"].id].fields["inport_connections(614)"].append(atoms.Reference(self.addAtom('float_core.inport_connection(105)')))
 				self.atomList[self.atomList[self.atomList[dID].fields["settings(6194)"].id].fields["inport_connections(614)"][dPort].id].fields["source_component(248)"] = atoms.Reference(sID)
@@ -634,12 +634,15 @@ class EditorCanvas(tk.Frame):
 		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
 		clicked = self.canvas.find_closest(x, y)
 		if clicked == self._refreshing:
-			id = int(self.canvas.gettags(clicked)[1][2:])
-			self.canvas.delete(self.canvas.gettags(clicked)[1])
-			self._draw_atom(self.atomList[id])
-			print(self.atomList[id].stringify())
-			print("yeah, refreshing")
+			self.refresh(clicked)
 		self._refreshing = None
+	
+	def refresh(self, clicked = 0):
+		id = int(self.canvas.gettags(clicked)[1][2:])
+		self.canvas.delete(self.canvas.gettags(clicked)[1])
+		self._draw_atom(self.atomList[id])
+		print(self.atomList[id].stringify())
+		print("yeah, refreshing")
 		
 	def _on_export_nitro_press(self, event):
 		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
@@ -743,7 +746,7 @@ class EditorCanvas(tk.Frame):
 		self.RortList[sID][sPort].append((dID, dPort))
 		
 	def delConn(self, dID,dPort, sID,sPort,): #d is drain, s is source
-		print('before:',self.portList)
+		#print('b: d -',self.portList[dID], 's -', self.RortList[sID])
 		if len(self.portList[dID]) >= dPort+1:
 			if self.portList[dID][dPort] == (sID,sPort):
 				self.portList[dID][dPort] = None
@@ -751,8 +754,7 @@ class EditorCanvas(tk.Frame):
 				print("jerror: source doesn't match drain. (401)")
 		else:
 			print("inport doesn't exist (400)")
-		for i in range(len(self.portList[dID]),0,-1):#get rid of trailing 'None's
-			print('i:',i-1)
+		for i in range(len(self.portList[dID]),0,-1):#get rid of trailing empty arrays
 			if self.portList[dID][i-1] == None:
 				del self.portList[dID][i-1]
 			else:
@@ -765,12 +767,17 @@ class EditorCanvas(tk.Frame):
 			print("jerror: source doesn't match drain. (402)")
 		else:
 			del self.RortList[sID][sPort][index]
-			if len(self.RortList[sID][sPort]) == 0:
-				del self.RortList[sID][sPort]
-		self.canvas.delete(str(dID) +':'+ str(dPort) +','+ str(sID) +':'+ str(sPort))
-		print('after:',self.portList)
+			for i in range(len(self.RortList[sID]),0,-1):#get rid of trailing 'None's
+				#print('i:',self.RortList[sID][i-1])
+				if len(self.RortList[sID][i-1]) == 0:
+					del self.RortList[sID][i-1]
+				else:
+					break
 	
-	def addAtom(self, name,): #TODONOW do this recursively
+		self.canvas.delete(str(dID) +':'+ str(dPort) +','+ str(sID) +':'+ str(sPort))
+		#print('a: d -',self.portList[dID], 's -', self.RortList[sID])
+	
+	def addAtom(self, name,):
 		#print(name,x,y,)
 		fields = {}
 		num = int(name.replace(')', ' ').replace('(', ' ').split()[-1])
@@ -801,8 +808,8 @@ class EditorCanvas(tk.Frame):
 			elif type == 0x12:
 				val = []
 				print("objlist:", i)
-				'''if i == 614:
-					val = self.addAtom('float_core.inport_connection(105)')'''
+				#if i == 614:
+				#	val = self.addAtom('float_core.inport_connection(105)')
 			elif type == 0x19:
 				val = ['placeholder0','placeholder1',]
 			elif type == 0x16:
@@ -851,7 +858,7 @@ class EditorCanvas(tk.Frame):
 		if len(self.portList) > id+1:
 			for port in range(len(self.portList[id])):
 				if self.portList[id][port]:
-					print(self.portList[id][port])
+					#print(self.portList[id][port])
 					self.delConn(id, port, *self.portList[id][port])
 		if len(self.RortList) > id+1:
 			for port in range(len(self.RortList[id])):
@@ -1186,14 +1193,11 @@ class EditorCanvas(tk.Frame):
 
 		#other atoms
 		elif className == 'float_common_atoms.decimal_event_filter_atom(400)':
-			val1 = obj.fields["comparison(842)"]
-			val2 = obj.fields["comparison_value(843)"]
-			self.makeRect(className, x, y, id,)
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+MED_FONT[1],fill="white",font=THK_FONT, text=str(val1), anchor="w",
-											tags=("grapheditor","id"+str(id), "2pt", "value"))
-			self.canvas.create_text(x+b+DOT_SIZE,y+4*b+2*MED_FONT[1],fill="white",font=THK_FONT, text=str(val2), anchor="w",
-											tags=("grapheditor","id"+str(id), "2pt", "value"))
-		elif className == 'float_common_atoms.indexed_lookup_table_atom(344)':
+			comparisons = ['<','>','=']
+			val = comparisons[obj.fields["comparison(842)"]]
+			val += str(obj.fields["comparison_value(843)"])[:5]
+			self.makeRect(className, x, y, id, val=val)
+		elif className == 'float_common_atoms.indexed_lookup_table_atom(344)': #TODO make a lookup table ui
 			'''vals = obj.fields["row_data(744)"]
 			length = obj.fields["row_count(743)"]
 			name += '\n'
@@ -1283,8 +1287,12 @@ class EditorCanvas(tk.Frame):
 			center = True
 		if nodesI == None:
 			nodesI = nodes.list[className]['i']
+			if isinstance(nodesI, list):
+				nodesI = len(nodesI)
 		if nodesO == None:
 			nodesO = nodes.list[className]['o']
+			if isinstance(nodesO, list):
+				nodesO = len(nodesO)
 		if w == None:
 			if vertical:
 				w = 30

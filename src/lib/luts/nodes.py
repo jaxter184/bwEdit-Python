@@ -39,8 +39,8 @@ list = {
 	},
 	'float_common_atoms.indexed_lookup_table_atom(344)': {
 		'name':"LUT",
-		'i':1,
-		'o':1,
+		'i':[('row index', 2),],
+		'o':[('column outputs (array)', 2),],
 		'w':60,
 	},
 	'constant_boolean_value_atom(635)': {
@@ -65,17 +65,22 @@ list = {
 		'vertical':None,
 	},
 	'float_common_atoms.polyphonic_note_voice_atom(350)': {
-		'name':"PolyNoteVoice",
-		'i':8,
-		'o':10,
-		'ins':((),(),(),),
+		'name':"Polyphonic Note Voice",
+		'i':[('Note Event', 1),('Mono', 2),('Legato Glide Enable', 2),('Glide Amount', 3),('Single Trigger Envelope', 2),('Voice Stack', 3),('Voice Limit', 2),('Steal Same Key', 2),],
+		'o':[('Note Event', 1),('Pitch', 3),('Velocity', 2),('Gain', 3),('Pan', 3),('presusre?', 3),(),('Pitch (used in sampler)', 3),('Note Event', 1),('Stack Index', 2),],
 		'vertical':None,
 	},
 	'float_common_atoms.monophonic_note_voice_atom(402)': {
 		'name':"MonoNoteVoice",
-		'i':1,
-		'o':5,
+		'i':[('Note Event', 1),],
+		'o':[('Note Event', 1),('Pitch', 3),(),('Amp', 3),('Pan', 3),],
 		'w':30,
+		'vertical':None,
+	},
+	'float_common_atoms.audio_voice_combiner_atom(313)': {
+		'name':"Combine",
+		'i':[('Audio In', 3),('Gate', 1),('Steal Release', 3),], #gate might not be an event
+		'o':[('Audio Out', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.delay_compensation_atom(1371)': {
@@ -147,7 +152,7 @@ list = {
 	},
 	'float_common_atoms.event_switch_atom(321)': {
 		'name':"Event Switch",
-		'i':2,
+		'i':[('Event', 1),('Retrigger', 2),],
 		'o':1,
 		'w':80,
 	},
@@ -288,23 +293,23 @@ list = {
 		'w':50,
 	},
 	'float_common_atoms.quantizer_atom(370)': {
-		'name':"quantize",
-		'i':3,
+		'name':"Quantize",
+		'i':[('Audio In', 3),('Level', 3),('not sure', -1),],
 		'o':1,
-		'w':80,
+		'vertical':None,
 	},
 	
 	#Control
 	'float_common_atoms.analog_adsr_atom(372)': {
 		'name':"AnalogADSR",
-		'i':5,
-		'o':1,
+		'i':[('Pitch', 3),('Attack', 3),('Decay', 3),('Sustain', 3),('Release', 3),],
+		'o':[('Amplitude', 3),('unknown', -1),],
 		'vertical':None,
 	},
 	'float_common_atoms.ahdsr_atom(466)': {
 		'name':"AHDSR",
-		'i':9,
-		'o':2,
+		'i':[('Note Event', 1),('Attack Time', 3),('Attack Shape', 3),('Hold Time', 3),('Decay Time', 3),('Decay Shape', 3),('Sustain Level', 3),('Release Time', 3),('Release Shape', 3),],
+		'o':[('Amplitude', 3),(),],
 		'vertical':None,
 	},
 	'float_common_atoms.multiphase_lfo_atom(406)': {
@@ -315,9 +320,8 @@ list = {
 	},
 	'float_common_atoms.lfo_atom(410)': {
 		'name':"LFO",
-		'i':6,
-		'o':0,
-		"port_names": ["Rate","Shape","Retrig","Sync","Phase","retrig again",],
+		'i':[('Rate', 3),('Shape', 3),('Retrig', 1),('Sync', 3),('Phase', 3),('Retrigger Enable', 22),],
+		'o':1,
 		'vertical':None,
 	},
 	'float_common_atoms.nameable_modulation_source_atom(1929)': {
@@ -331,31 +335,31 @@ list = {
 	'float_common_atoms.noise_atom(294)': {
 		'name':"Noise",
 		'i':0,
-		'o':1,
+		'o':[('Audio Out', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.sample_rate_reduction_atom(295)': {
 		'name':"S&H",
-		'i':2,
-		'o':1,
+		'i':[('Audio In', 3),('Frequency', 3),],
+		'o':[('Audio Out', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.multimode_filter_atom(312)': {
 		'name':"Multimode Filter",
-		'i':8,
-		'o':1,
+		'i':[('Audio In', 3),('Cutoff Frequency', 3),('Resonance', 3),(),(),(),(),(),],
+		'o':[('Audio Out', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.sample_player_atom(330)': {
 		'name':"Sampler",
-		'i':6,
-		'o':4,
+		'i':[('Sampler Resource', -1),('Note Event', 1),('Pitch', 3),('Sample Start', 3),('Loop Start', 3),('Loop Length', 3),],
+		'o':[('Audio Out', 3),('Gate', 2),('PolyObs?', 3),('Loop Jump', 1),],
 		'vertical':None,
 	},
 	'float_common_atoms.sine_oscillator_atom(324)': {
 		'name':"Sine",
 		'i':1,
-		'o':1,
+		'o':[('Audio Out', 3),],
 		'w':50,
 		'center':None,
 	},
@@ -410,8 +414,8 @@ list = {
 	},
 	'float_common_atoms.surge_classic_oscillator_atom(491)': {
 		'name':"SURGE",
-		'i':9,
-		'o':1,
+		'i':[('Pitch', 3),('Shape', 3),('Pulse Width', 3),('Sub Pulse Width', 3),('Sub Level', 3),('Sync', 3),('Unison Spread', 3),('Unison Voices', 3),('who knows', 2),],
+		'o':[('Audio Out', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.feedback_compressor_atom(547)': {
@@ -433,8 +437,8 @@ list = {
 		'vertical':None,
 	},
 	'float_common_atoms.svf_filter_atom(578)': {
-		'name':"FILTER",
-		'i':6,
+		'name':"SVF Filter",
+		'i':[('Audio In', 3),('Filter Type', 1),('Cutoff Frequency', 3),(),('Resonance', 3),(),],
 		'o':1,
 		'vertical':None,
 	},
@@ -732,8 +736,8 @@ list = {
 	},
 	'float_common_atoms.amp_and_pan_atom(431)': {
 		'name':"Amp&Pan",
-		'i':3,
-		'o':1,
+		'i':[('Audio In', 3),('Amp', 3),('Pan', 3),],
+		'o':[('Audio Out', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.moving_average_filter_atom(565)': {
@@ -775,12 +779,6 @@ list = {
 	'float_common_atoms.vibrato_delaytime_modulation_atom(412)': {
 		'name':"D-Vibrato",
 		'i':2,
-		'o':1,
-		'vertical':None,
-	},
-	'float_common_atoms.audio_voice_combiner_atom(313)': {
-		'name':"Combine",
-		'i':3,
 		'o':1,
 		'vertical':None,
 	},

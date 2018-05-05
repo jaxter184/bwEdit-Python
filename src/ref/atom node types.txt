@@ -1,0 +1,9 @@
+1 event
+2 value
+3 audio
+
+value types:
+bool
+indexed
+int
+decimal

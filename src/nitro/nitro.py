@@ -10,12 +10,10 @@ def countIOs(text):
 				if text[i] == '[':
 					if ']' in text[i:i+30]:
 						end = text[i:i+30].index(']')
-						#print(text[i-5:i+end+5])
+						#print('nitro in:',text[i-5:i+end+5])
 						arraySize = text[i+1:i+end]
-						arraySize.replace('+', ' + ')
-						arraySize.replace('*', ' * ')
-						arraySize = arraySize.split()
 						arraySize = expression(text, arraySize)
+						#print(arraySize)
 						i+= end
 						inports += arraySize
 				else:
@@ -26,14 +24,11 @@ def countIOs(text):
 				if text[i] == '[':
 					if ']' in text[i:i+30]:
 						end = text[i:i+30].index(']')
-						#print(text[i-5:i+end+5])
+						#print('nitroout:',text[i-5:i+end+5])
 						arraySize = text[i+1:i+end]
 						if arraySize.isdigit():
 							arraySize = int(arraySize)
 						else:
-							arraySize.replace('+', ' + ')
-							arraySize.replace('*', ' * ')
-							arraySize = arraySize.split()
 							arraySize = expression(text, arraySize)
 						i+= end
 						outports += arraySize
@@ -68,12 +63,16 @@ def getName(text):
 			val = val[:20]'''
 
 def expression(text, exp):#exp is a list of terms TODO implement parentheses and subtraction
+	if isinstance(exp, str):
+		exp.replace('+', ' + ')
+		exp.replace('*', ' * ')
+		exp = exp.split()
 	variables = {}
 	if len(exp) == 1:
 		if isinstance(exp[0], int) or exp[0].isdigit():
 			return int(exp[0])
 		else:#its a variable name
-			j = text.find(exp[0]) + len(exp[0])
+			j = text.find('const i32 '+exp[0]) + len('const i32 '+exp[0])
 			while not text[j].isdigit():
 				j+=1
 			nLen = 0
