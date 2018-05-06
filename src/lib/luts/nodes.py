@@ -178,8 +178,8 @@ list = {
 		'vertical':None,
 	},
 	'float_core.oscilloscope_atom(1654)': {
-		'name':"OScope",
-		'i':11,
+		'name':"Dual OScope",
+		'i':[('In A',3),('In B',3),('Scale',3),('Gain A',3),('Gain B',3),('Trigger Select',3),('Level',3),('Hold',3),('Trigger Slope Select',3),('Input B Enable',3),('Note Event In',3),],
 		'o':1,
 		'w':30,
 		'vertical':None,
@@ -801,7 +801,7 @@ list = {
 		'w':80,
 	},
 	'lightweight_oscilloscope_atom(2072)': {
-		'name':"OScope(L)",
+		'name':"OScope",
 		'i':4,
 		'o':0,
 		'vertical':None,

@@ -139,6 +139,9 @@ class NodeEditorCanvas(tk.Frame):
 		self.vbar.pack(side='right',fill='y')
 		self.vbar.config(command=self.canvas.yview)
 		self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set)
+		self.pCanvas = tk.Canvas(self, bg = "#1e1e1e")
+		self.pCanvas.config(width=1500, height=120)
+		self.pCanvas.pack(side = 'bottom',fill='x', expand=True)
 		self.canvas.pack(side = 'left', fill="both", expand=True)
 		self.update()
 		self.canvas.config(scrollregion=self.canvas.bbox("all"))
@@ -148,7 +151,6 @@ class NodeEditorCanvas(tk.Frame):
 		self._drag_data = {"relPos": {}, "item": None}
 		#self._new_conn_data = {"start": 0, "end": 0, "type0": '', "type1": '', "port0": '', "port1": ''}
 		self._new_conn_data = {}
-		self._selected = ''
 		self._currentlyConnecting = False
 		self._dragged = False
 		self._inspector_active = False
@@ -713,7 +715,6 @@ class NodeEditorCanvas(tk.Frame):
 			self._browser_active = False
 		pass
 
-
 	def drawKids(self, child,):
 		if isinstance(child, atoms.Atom):
 			if "settings(6194)" in child.fields:#if its a regular atom
@@ -890,6 +891,9 @@ class NodeEditorCanvas(tk.Frame):
 		self.canvas.delete("manager")
 		#print("delete")
 	
+	def addPanel(self, name,):
+		pass
+	
 	def flattenData(self, data, isRoot = False,):
 		if isinstance(data, list):
 			if isRoot:
@@ -949,7 +953,18 @@ class NodeEditorCanvas(tk.Frame):
 			if obj.classname == "float_core.proxy_out_port_component(50)":
 				subClasses["proxy_out_ports(178)"].append(obj)
 				if self.portList[i] and self.portList[i][0]:
-					subClasses["child_components(173)"].append(atoms.Reference(self.portList[i][0][0]))
+					connectee = self.portList[i][0][0]
+					if not self.tempAtomList[connectee].classname == "float_core.proxy_in_port_component(154)":
+						'''type = self.tempAtomList[self.tempAtomList[connectee].fields["port(301)"].id].classname
+						if type == "float_core.audio_port(242)":
+							subClasses["proxy_in_ports(177)"].insert(0, self.tempAtomList[connectee]) #get inport references
+						elif type == "float_core.note_port(61)":
+							subClasses["proxy_in_ports(177)"].append(self.tempAtomList[connectee])
+						else:
+							print("jerror: inport that isnt note or audio 1777")
+						self.tempAtomList[i] = None
+					else:'''
+						subClasses["child_components(173)"].append(atoms.Reference(connectee))
 				else:
 					print("nothing connected to the out port")
 				self.tempAtomList[i] = None

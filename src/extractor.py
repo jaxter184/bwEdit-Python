@@ -1,6 +1,5 @@
 import struct
 from collections import OrderedDict
-from src.lib.luts import tables, backupObjects, backupFields
 from src.lib import atoms
 import uuid
 
