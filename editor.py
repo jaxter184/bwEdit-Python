@@ -23,6 +23,8 @@ LINE_WID = 3
 LINE_COL = "#fd811a"
 H_MULT = 3
 V_MULT = 1
+UI_H_MULT = 5
+UI_V_MULT = UI_H_MULT
 BORDER = 8
 NODECOL = "#eee"
 BASECOL = "#414141"
@@ -140,9 +142,9 @@ class NodeEditorCanvas(tk.Frame):
 		self.vbar.config(command=self.canvas.yview)
 		self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set)
 		self.pCanvas = tk.Canvas(self, bg = "#1e1e1e")
-		self.pCanvas.config(width=1500, height=120)
+		self.pCanvas.config(width=1500, height=59*UI_H_MULT)
 		self.pCanvas.pack(side = 'bottom',fill='x', expand=True)
-		self.canvas.pack(side = 'left', fill="both", expand=True)
+		self.canvas.pack(side = 'top', fill="both", expand=True)
 		self.update()
 		self.canvas.config(scrollregion=self.canvas.bbox("all"))
 		
@@ -201,6 +203,7 @@ class NodeEditorCanvas(tk.Frame):
 	def load(self, file):
 		self.data = file
 		self.canvas.delete("all")
+		self.pCanvas.delete("all")
 		self.size = 0
 		self.numLines = 0
 		objLocs = []
@@ -218,17 +221,23 @@ class NodeEditorCanvas(tk.Frame):
 		self.panelMap = [] #index is object, stores list of references
 
 		#flatten data
-		for eachField in ("child_components(173)","panels(6213)","proxy_in_ports(177)","proxy_out_ports(178)"):
+		for eachField in ("child_components(173)","proxy_in_ports(177)","proxy_out_ports(178)"):
 			for item in range(len(self.data[1].fields[eachField])):
 				if isinstance(self.data[1].fields[eachField][item], atoms.Atom):
 					self.atomList.append(self.data[1].fields[eachField][item])
-		self.flattenData(self.atomList, True)
+		self.atomList = self.flattenData(self.atomList, True)
 		
-		#draw atoms and connections
+		for item in range(len(self.data[1].fields["panels(6213)"])):
+			if isinstance(self.data[1].fields["panels(6213)"][item], atoms.Atom):
+				self.paneList.append(self.data[1].fields["panels(6213)"][item])
+		#self.paneList = self.flattenData(self.paneList, True)
+		
+		#draw atoms and connections and panels
 		for item in self.atomList:
 			if item:
 				self.drawKids(item)
 		self.drawConnections()
+		self._draw_panel(self.paneList[0], xOff = 3*UI_V_MULT, yOff = 3*UI_H_MULT)
 		
 		#update scroll region
 		self.update()
@@ -590,7 +599,7 @@ class NodeEditorCanvas(tk.Frame):
 		textBounds = self.canvas.bbox(canvasText)
 		maxWidth = max(textBounds[2] - textBounds[0], maxWidth)'''
 		
-		#add delete TODO don't render delete button for inports
+		#add delete
 		if obj.classname != "float_core.proxy_in_port_component(154)":
 			text = self.canvas.create_text(x+BORDER,y+MED_FONT[1]*2*fieldOffset+BOL_FONT[1]+BORDER,fill="white",font=MED_FONT, text="DELETE ATOM", anchor="w",
 																tags=("grapheditor","id"+str(id), "2pt", "text", "delete", "manager",))
@@ -648,7 +657,7 @@ class NodeEditorCanvas(tk.Frame):
 		self.canvas.delete(self.canvas.gettags(clicked)[1])
 		self._draw_atom(self.atomList[id])
 		print(self.atomList[id].stringify())
-		print("yeah, refreshing")
+		print("refreshing")
 		
 	def _on_export_nitro_press(self, event):
 		x,y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
@@ -729,12 +738,6 @@ class NodeEditorCanvas(tk.Frame):
 							if "settings(6194)" in obj.fields:
 								self.addConn(child.id, inportCount, obj.id, inportConn.fields["outport_index(249)"])
 					inportCount += 1
-			elif "layout_settings(6226)" in child.fields:
-				if "data_model(6220)" in child.fields and child.fields["data_model(6220)"]:#if it depends on a control
-					id = child.fields["data_model(6220)"].id
-					while len(self.panelMap) < id+1:
-						self.panelMap.append([])
-					self.panelMap[id].append(self.atomList.index(child))
 
 	def addConn(self, dID,dPort, sID,sPort,): #d is drain, s is source
 		listLengths = max(sID+1,dID+1)
@@ -892,26 +895,32 @@ class NodeEditorCanvas(tk.Frame):
 		#print("delete")
 	
 	def addPanel(self, name,):
+		fields = {}
+		num = int(name.replace(')', ' ').replace('(', ' ').split()[-1])
+		currentIndex = len(self.atomList)
+		self.atomList.append(atoms.Atom(name))
+		if 6226 in typeLists.classList[num]:
+			self._draw_panel(self.atomList[currentIndex])
 		pass
 	
-	def flattenData(self, data, isRoot = False,):
+	def flattenData(self, data, isRoot = True,):
 		if isinstance(data, list):
 			if isRoot:
-				self.atomList = []
+				self.finalOut = []
 			output = []
 			for eachClass in range(len(data)):
-				#self.flattenData(data[eachClass])
-				output.append(self.flattenData(data[eachClass])) #automatically checks type in the function
+				#self.flattenData(data[eachClass], isRoot = False)
+				output.append(self.flattenData(data[eachClass], isRoot = False)) #automatically checks type in the function
 			if isRoot:
-				return self.atomList
+				return self.finalOut
 			return output
 		elif isinstance(data, atoms.Atom):
 			for eachField in data.fields:
 				field = data.fields[eachField]
-				data.fields[eachField] =  self.flattenData(field)
-			while len(self.atomList) < data.id+1:
-				self.atomList.append(None)
-			self.atomList[data.id] = data
+				data.fields[eachField] =  self.flattenData(field, isRoot = False)
+			while len(self.finalOut) < data.id+1:
+				self.finalOut.append(None)
+			self.finalOut[data.id] = data
 			data = atoms.Reference(data.id)
 		elif (isinstance(data, atoms.Reference)):
 			pass
@@ -1271,6 +1280,36 @@ class NodeEditorCanvas(tk.Frame):
 		if doth > h:
 			current = self.canvas.coords("id"+str(id)+"&&case")
 			self.canvas.coords("id"+str(id)+"&&case", current[0], current[1], current[2], y+doth)
+
+	def _draw_panel(self, obj, x=None, y=None, xOff=0, yOff=0):
+		id = obj.id
+		#print("id:",id)
+		if "layout_settings(6226)" in obj.fields and obj.fields["layout_settings(6226)"]:
+			if obj.fields["layout_settings(6226)"].classname == "float_core.grid_panel_item_layout_settings(1694)":
+				x = UI_H_MULT*obj.fields["layout_settings(6226)"].fields["x(6215)"]+xOff
+				y = UI_V_MULT*obj.fields["layout_settings(6226)"].fields["y(6216)"]+yOff
+				w = UI_H_MULT*obj.fields["layout_settings(6226)"].fields["width(6217)"]
+				h = UI_V_MULT*obj.fields["layout_settings(6226)"].fields["height(6218)"]
+				randcol = '#%006x' % random.randrange(16**6)
+				self.pCanvas.create_rectangle(x, y, x+w, y+h, activeoutline = "white" , outline=BASECOL, fill=randcol, tags=("uieditor","id"+str(id), "4pt", "slider"))
+			#elif obj.fields["layout_settings(6226)"].classname == "float_core.stack_panel_item_layout_settings(1803)":
+			#	pass
+			else:
+				print("panel type unknown")
+		if "data_model(6220)" in obj.fields and obj.fields["data_model(6220)"]:#if it depends on a control
+			id = obj.fields["data_model(6220)"].id
+			while len(self.panelMap) < id+1:
+				self.panelMap.append([])
+			self.panelMap[id].append(obj.id)
+		if x == None:
+			x = xOff
+		if y == None:
+			y = yOff
+		if "items(6221)" in obj.fields and obj.fields["items(6221)"]:
+			for subItem in obj.fields["items(6221)"]:
+				self._draw_panel(subItem, xOff = x, yOff = y)
+		if "root_item(6212)" in obj.fields and obj.fields["root_item(6212)"]:
+			self._draw_panel(obj.fields["root_item(6212)"], xOff = x, yOff = y)
 	
 	def makeRect(self, className, x, y, id, name = None, w = None, h = None, nodesI = None, nodesO = None, b = BORDER, v_offset = TOTAL_OFF, val = None, vertical = False, center = False, deco = False):
 		if "vertical" in nodes.list[className]:
