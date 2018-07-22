@@ -1,0 +1,15 @@
+component triggerCounter
+{
+   event_inport void in
+   {
+      send out ++count;
+   }
+
+   value_outport i32 out = 0;
+
+   i32 count = 0;
+
+   process
+   {
+   }
+}

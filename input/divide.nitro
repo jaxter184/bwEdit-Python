@@ -1,0 +1,12 @@
+@icon "divide.svg"
+component divide_custom
+{
+   audio_inport f32 in1;
+   value_inport i32 in2;
+   audio_outport out;
+
+   process
+   {
+      out = in1 / fmax(1, in2.f32);
+   }
+}

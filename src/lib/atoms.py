@@ -155,106 +155,110 @@ class Atom:
 		else:
 			#print(typeLists.fieldList[fieldNum])
 			#print(value)
-			if typeLists.fieldList[fieldNum] == 0x01:
-				if value <= 127 and value >= -128:
-					output += bytearray.fromhex('01')
-					if value < 0:
-						#print(hex(0xFF + value + 1)[2:])
-						output += bytearray.fromhex(hex(0xFF + value + 1)[2:])
-					else:
-						output += hexPad(value, 2)
-				elif value <= 32767 and value >= -32768:
-					output += bytearray.fromhex('02')
-					if value < 0:
-						#print(value)
-						#print(hex((value + (1 << 4)) % (1 << 4)))
-						output += bytearray.fromhex(hex(0xFFFF + value + 1)[2:])
-					else:
-						output += hexPad(value, 4)
-				elif value <= 2147483647 and value >= -2147483648:
-					output += bytearray.fromhex('03')
-					if value < 0:
-						output += bytearray.fromhex(hex(0xFFFFFFFF + value + 1)[2:])
-					else:
-						output += hexPad(value, 8)
-			elif typeLists.fieldList[fieldNum] == 0x05:
-				output += bytearray.fromhex('05')
-				output += bytearray.fromhex('01' if value else '00')
-			elif typeLists.fieldList[fieldNum] == 0x06:
-				flVal = struct.unpack('<I', struct.pack('<f', value))[0]
-				output += bytearray.fromhex('06')
-				output += hexPad(flVal,8)
-			elif typeLists.fieldList[fieldNum] == 0x07:
-				dbVal = struct.unpack('<Q', struct.pack('<d', value))[0]
-				output += bytearray.fromhex('07')
-				output += hexPad(dbVal,16)
-			elif typeLists.fieldList[fieldNum] == 0x08:
-				output += bytearray.fromhex('08')
-				value = value.replace('\\n', '\n')
-				try: value.encode("ascii")
-				except UnicodeEncodeError:
-					output += bytearray.fromhex(hex(0x80000000 + len(value))[2:])
-					output.extend(value.encode('utf-16be'))
-				else:
-					output += hexPad(len(value), 8)
-					output.extend(value.encode('utf-8'))
-			elif typeLists.fieldList[fieldNum] == 0x09:
-				if type(value) == Reference:
-					output += bytearray.fromhex('0b')
-					output += value.encode()
-				elif type(value) == Atom:
-					output += bytearray.fromhex('09')
-					output += value.encode()
-				elif type(value) == NoneType:
-					output += bytearray.fromhex('0a')
-			elif typeLists.fieldList[fieldNum] == 0x12:
-				output += bytearray.fromhex('12')
-				for item in value:
-					if type(item) == Atom:
-						output += item.encode()
-					elif type(item) ==  Reference:
-						output += bytearray.fromhex('00000001')
-						output += item.encode()
-					else:
-						print("something went wrong in atoms.py. \'not object list\'")
-				output += bytearray.fromhex('00000003')
-			elif typeLists.fieldList[fieldNum] == 0x14:
-				output += bytearray.fromhex('14')
-				if '' in value["type"]:
-					#print("empty string: this shouldnt happen in devices and presets")
-					pass
-				else:
-					output += bytearray.fromhex('01')
-					for key in value["data"]:
-						output += hexPad(len(key), 8)
-						output.extend(key.encode('utf-8'))
-						output += value["data"][key].encode()
-				output += bytearray.fromhex('00')
-			elif typeLists.fieldList[fieldNum] == 0x15:
-				output += bytearray.fromhex('15')
-				placeholder = uuid.UUID(value)
-				output.extend(placeholder.bytes)
-			elif typeLists.fieldList[fieldNum] == 0x16:
-				output += bytearray.fromhex('16')
-				output += value.encode()
-			elif typeLists.fieldList[fieldNum] == 0x17:
-				output += bytearray.fromhex('17')
-				output += hexPad(len(value), 8)
-				for item in value:
-					flVal = hex(struct.unpack('<I', struct.pack('<f', item))[0])[2:]
+			if fieldNum in typeLists.fieldList:
+				if typeLists.fieldList[fieldNum] == 0x01:
+					if value <= 127 and value >= -128:
+						output += bytearray.fromhex('01')
+						if value < 0:
+							#print(hex(0xFF + value + 1)[2:])
+							output += bytearray.fromhex(hex(0xFF + value + 1)[2:])
+						else:
+							output += hexPad(value, 2)
+					elif value <= 32767 and value >= -32768:
+						output += bytearray.fromhex('02')
+						if value < 0:
+							#print(value)
+							#print(hex((value + (1 << 4)) % (1 << 4)))
+							output += bytearray.fromhex(hex(0xFFFF + value + 1)[2:])
+						else:
+							output += hexPad(value, 4)
+					elif value <= 2147483647 and value >= -2147483648:
+						output += bytearray.fromhex('03')
+						if value < 0:
+							output += bytearray.fromhex(hex(0xFFFFFFFF + value + 1)[2:])
+						else:
+							output += hexPad(value, 8)
+				elif typeLists.fieldList[fieldNum] == 0x05:
+					output += bytearray.fromhex('05')
+					output += bytearray.fromhex('01' if value else '00')
+				elif typeLists.fieldList[fieldNum] == 0x06:
+					flVal = struct.unpack('<I', struct.pack('<f', value))[0]
+					output += bytearray.fromhex('06')
 					output += hexPad(flVal,8)
-			elif typeLists.fieldList[fieldNum] == 0x19: #string array
-				output += bytearray.fromhex('19')
-				output += hexPad(len(value), 8)
-				for i in value:
-					i = i.replace('\\n', '\n')
-					output += hexPad(len(i), 8)
-					output.extend(i.encode('utf-8'))
-			else:
-				if typeLists.fieldList[fieldNum] == None:
-					print("atoms.py: 'None' in atom encoder. obj: " + str(fieldNum))
+				elif typeLists.fieldList[fieldNum] == 0x07:
+					dbVal = struct.unpack('<Q', struct.pack('<d', value))[0]
+					output += bytearray.fromhex('07')
+					output += hexPad(dbVal,16)
+				elif typeLists.fieldList[fieldNum] == 0x08:
+					output += bytearray.fromhex('08')
+					value = value.replace('\\n', '\n')
+					try: value.encode("ascii")
+					except UnicodeEncodeError:
+						output += bytearray.fromhex(hex(0x80000000 + len(value))[2:])
+						output.extend(value.encode('utf-16be'))
+					else:
+						output += hexPad(len(value), 8)
+						output.extend(value.encode('utf-8'))
+				elif typeLists.fieldList[fieldNum] == 0x09:
+					if type(value) == Reference:
+						output += bytearray.fromhex('0b')
+						output += value.encode()
+					elif type(value) == Atom:
+						output += bytearray.fromhex('09')
+						output += value.encode()
+					elif type(value) == NoneType:
+						output += bytearray.fromhex('0a')
+				elif typeLists.fieldList[fieldNum] == 0x12:
+					output += bytearray.fromhex('12')
+					for item in value:
+						if type(item) == Atom:
+							output += item.encode()
+						elif type(item) ==  Reference:
+							output += bytearray.fromhex('00000001')
+							output += item.encode()
+						else:
+							print("something went wrong in atoms.py. \'not object list\'")
+					output += bytearray.fromhex('00000003')
+				elif typeLists.fieldList[fieldNum] == 0x14:
+					output += bytearray.fromhex('14')
+					if '' in value["type"]:
+						#print("empty string: this shouldnt happen in devices and presets")
+						pass
+					else:
+						output += bytearray.fromhex('01')
+						for key in value["data"]:
+							output += hexPad(len(key), 8)
+							output.extend(key.encode('utf-8'))
+							output += value["data"][key].encode()
+					output += bytearray.fromhex('00')
+				elif typeLists.fieldList[fieldNum] == 0x15:
+					output += bytearray.fromhex('15')
+					placeholder = uuid.UUID(value)
+					output.extend(placeholder.bytes)
+				elif typeLists.fieldList[fieldNum] == 0x16:
+					output += bytearray.fromhex('16')
+					output += value.encode()
+				elif typeLists.fieldList[fieldNum] == 0x17:
+					output += bytearray.fromhex('17')
+					output += hexPad(len(value), 8)
+					for item in value:
+						flVal = hex(struct.unpack('<I', struct.pack('<f', item))[0])[2:]
+						output += hexPad(flVal,8)
+				elif typeLists.fieldList[fieldNum] == 0x19: #string array
+					output += bytearray.fromhex('19')
+					output += hexPad(len(value), 8)
+					for i in value:
+						i = i.replace('\\n', '\n')
+						output += hexPad(len(i), 8)
+						output.extend(i.encode('utf-8'))
 				else:
-					print("jaxter stop being a lazy poop and " + hex(typeLists.fieldList[fieldNum]) + " to the atom encoder. obj: " + str(fieldNum))
+					if typeLists.fieldList[fieldNum] == None:
+						#print("atoms.py: 'None' in atom encoder. obj: " + str(fieldNum)) #temporarily disabling this error warning because i have no clue what any of these fields are
+						pass
+					else:
+						print("jaxter stop being a lazy poop and " + hex(typeLists.fieldList[fieldNum]) + " to the atom encoder. obj: " + str(fieldNum))
+			else:
+				print("missing type in typeLists.fieldList: " + str(fieldNum))
 		return output
 
 	def encode(self):

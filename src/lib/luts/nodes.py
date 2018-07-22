@@ -354,8 +354,8 @@ list = {
 	},
 	'float_common_atoms.sample_player_atom(330)': {
 		'name':"Sampler",
-		'i':[('Sampler Resource', -1),('Note Event', 1),('Pitch', 3),('Sample Start', 3),('Loop Start', 3),('Loop Length', 3),],
-		'o':[('Audio Out', 3),('Gate', 2),('PolyObs?', 3),('Loop Jump', 1),],
+		'i':[('Sampler Resource', -1),('Note Event', 1),('Pitch', 3),('Select', 3),('Play/Position Offset', 3),('Loop Offset', 3),('Loop Length', 3),('Play Mode', 3),('Speed', 3),('Grain Size', 3),('Formant', 3),('Freeze Playhead', 3),('???', 3),('Envelope Mode', 3),('Fade In', 3),('Fade Out', 3),('Playhead Motion', 3),],#check type numbers at some point
+		'o':[('Audio Out', 3),('Gate', 2),('PolyObs?', 3),('Loop Jump', 1),('Zone Parameter 1', 3),('Zone Parameter 2', 3),('Zone Parameter 3', 3),],
 		'vertical':None,
 	},
 	'float_common_atoms.sine_oscillator_atom(324)': {

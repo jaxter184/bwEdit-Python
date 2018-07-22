@@ -1,0 +1,466 @@
+/*
+ * clock_generator
+ * ===============
+ *
+ * Restart Type
+ * ~~~~~~~~~~~~
+ * 0 - free running, it does never restart
+ * 1 - gate, it restarts on every note on
+ * 5 - gate + sync, it restarts on every note on
+ * 4 - single, it restart on note on, if no other notes are playing
+ * 6 - single + sync, it restart on note on, if no other notes are playing
+ * 3 - random, it restart with a random phase on every note on
+ * 2 - hard sync, it is always in sync with the transport beat time or time (s)
+ * 7 - hard sync + swing, it is always in sync with the transport beat time or time (s)
+ *
+ * Sync Type (implied by the rate type, internal)
+ * ~~~~~~~~~
+ * 0 - Sync to the Beat Time
+ * 1 - Sync to the Time (seconds)
+ * 2 - Pitch
+ * 3 - None (Frozen)
+ *
+ * Rate Type
+ * ~~~~~~~~~
+ * 0 - Hz (Sync, seconds)
+ * 1 - kHz (Sync, seconds)
+ * 2 - 1/1 Note
+ * 3 - 1/2 Note
+ * 4 - 1/4 Note
+ * 5 - 1/8 Note
+ * 6 - 1/16 Note
+ * 7 - 1/32 Note
+ * 9 - 1/1 * 1.5 Note (dot)
+ * 10 - 1/2 * 1.5 Note (dot)
+ * 11 - 1/4 * 1.5 Note (dot)
+ * 12 - 1/8 * 1.5 Note (dot)
+ * 13 - 1/16 * 1.5 Note (dot)
+ * 14 - 1/32 * 1.5 Note (dot)
+ * 15 - 1/1 * 2/3 Note (triplet)
+ * 16 - 1/2 * 2/3 Note (triplet)
+ * 17 - 1/4 * 2/3 Note (triplet)
+ * 18 - 1/8 * 2/3 Note (triplet)
+ * 19 - 1/16 * 2/3 Note (triplet)
+ * 20 - 1/16 * 2/3 Note (triplet)
+ * 21 - Pitch (follow the last played note, or first if restart is single)
+ * 22 - Frozen (phase inc = 0)
+ *
+ * Output
+ * ~~~~~~
+ * Phase between 0 and 1.
+ * If invert is false then the phase goes up, otherwise it goes down.
+ */
+@name "Clock Generator"
+component clock_generator
+{
+   const i32 FREE_RESTART_TYPE = 0;
+   const i32 GATE_RESTART_TYPE = 1;
+   const i32 GATE_SYNC_RESTART_TYPE = 5;
+   const i32 SINGLE_RESTART_TYPE = 4;
+   const i32 SINGLE_SYNC_RESTART_TYPE = 6;
+   const i32 KEY_RND_RESTART_TYPE = 3;
+   const i32 HARD_SYNC_RESTART_TYPE = 2;
+   const i32 HARD_SYNC_SWING_RESTART_TYPE = 7;
+   const i32 KEY_INC_RESTART_TYPE = 8;
+
+   const i32 BEAT_TIME_SYNC_TYPE = 0;
+   const i32 TIME_SYNC_TYPE = 1;
+   const i32 PITCH_SYNC_TYPE = 2;
+   const i32 FROZEN_SYNC_TYPE = 3;
+
+   const f32 EPSYLON = 0.000001;
+
+   /*****************/
+   /* Configuration */
+   /*****************/
+
+   @name "Restart Type"
+   value_inport i32 restart_type;
+
+   void setRestartType(i32 restartType)
+   {
+      // check restart_type value...
+      if (0 <= restartType && restartType <= 7)
+         cached_restart_type = restartType;
+      else
+         cached_restart_type = FREE_RESTART_TYPE;
+   }
+
+   @name "Rate Type"
+   value_inport i32 rate_type;
+
+   void setRateType(i32 rateType)
+   {
+      cached_rate_type = rateType;
+
+      if (rateType == 0)
+      {
+         sync_type = 1;
+         time_phase_inc = 1.0 / EC.samplerate;
+      }
+      else if (rateType == 1)
+      {
+         sync_type = 1;
+         time_phase_inc = 1000.0 / EC.samplerate;
+      }
+      else if (rateType == 2)
+      {
+         sync_type = 0;
+         rate_type_value = 1 * 0.25;
+      }
+      else if (rateType == 3)
+      {
+         sync_type = 0;
+         rate_type_value = 2.0 * 0.25;
+      }
+      else if (rateType == 4)
+      {
+         sync_type = 0;
+         rate_type_value = 4.0 * 0.25;
+      }
+      else if (rateType == 5)
+      {
+         sync_type = 0;
+         rate_type_value = 8.0 * 0.25;
+      }
+      else if (rateType == 6)
+      {
+         sync_type = 0;
+         rate_type_value = 16.0 * 0.25;
+      }
+      else if (rateType == 7)
+      {
+         sync_type = 0;
+         rate_type_value = 32.0 * 0.25;
+      }
+      else if (rateType == 9)
+      {
+         sync_type = 0;
+         rate_type_value = 1 * (0.25 / 1.5);
+      }
+      else if (rateType == 10)
+      {
+         sync_type = 0;
+         rate_type_value = 2.0 * (0.25 / 1.5);
+      }
+      else if (rateType == 11)
+      {
+         sync_type = 0;
+         rate_type_value = 4.0 * (0.25 / 1.5);
+      }
+      else if (rateType == 12)
+      {
+         sync_type = 0;
+         rate_type_value = 8.0 * (0.25 / 1.5);
+      }
+      else if (rateType == 13)
+      {
+         sync_type = 0;
+         rate_type_value = 16.0 * (0.25 / 1.5);
+      }
+      else if (rateType == 14)
+      {
+         sync_type = 0;
+         rate_type_value = 32.0 * (0.25 / 1.5);
+      }
+      else if (rateType == 15)
+      {
+         sync_type = 0;
+         rate_type_value = 1.0 * (0.25 * 1.5);
+      }
+      else if (rateType == 16)
+      {
+         sync_type = 0;
+         rate_type_value = 2.0 * (0.25 * 1.5);
+      }
+      else if (rateType == 17)
+      {
+         sync_type = 0;
+         rate_type_value = 4.0 * (0.25 * 1.5);
+      }
+      else if (rateType == 18)
+      {
+         sync_type = 0;
+         rate_type_value = 8.0 * (0.25 * 1.5);
+      }
+      else if (rateType == 19)
+      {
+         sync_type = 0;
+         rate_type_value = 16.0 * (0.25 * 1.5);
+      }
+      else if (rateType == 20)
+      {
+         sync_type = 0;
+         rate_type_value = 32.0 * (0.25 * 1.5);
+      }
+      else if (rateType == 21)
+      {
+         sync_type = 2;
+      }
+      else if (rateType == 22)
+      {
+         sync_type = 3;
+         phase = 0;
+      }
+      else
+      {
+         cached_rate_type = 0; // fix rate_type value
+         time_phase_inc = 1.0 / EC.samplerate;
+      }
+   }
+
+   @name "Rate Modulation"
+   audio_inport f32 rate_mod;
+
+   @name "Phase Modulation"
+   audio_inport f32 phase_mod;
+
+   @name "Invert output phase"
+   value_inport bool invert
+   {
+      if (cached_invert != invert)
+      {
+         if (!pendulum)
+         {
+            if (phase < 0)
+               phase = 1 - EPSYLON.f64;
+            else if (phase > 1)
+               phase = 0;
+            else if (phase > EPSYLON.f64 && phase < 1 - EPSYLON.f64)
+               phase = 1 - EPSYLON.f64 - phase;
+         }
+         else
+         {
+            if (phase < 0)
+               phase = 1 - EPSYLON.f64;
+            else if (phase > 1)
+               phase = 0;
+            else if (phase > EPSYLON.f64 && phase < 0.5)
+               phase = 0.5 - phase;
+            else if (phase < 1)
+               phase = 1 - (phase - 0.5);
+         }
+      }
+
+      cached_invert = invert;
+   }
+   bool cached_invert = false;
+
+   @name "Loop"
+   value_inport bool loop
+   {
+      if (!cached_loop && loop && phase >= 1)
+         phase = 1 - EPSYLON.f64;
+
+      cached_loop = loop;
+   }
+   bool cached_loop = false;
+
+   /********************/
+   /* Transport values */
+   /********************/
+
+   @name "Is Playing"
+   value_inport bool is_playing;
+
+   @name "Time (beats)"
+   audio_inport f32 beat_time;
+
+   @name "Time (beats + swing)"
+   audio_inport f32 beat_time_swing;
+
+   @name "Time (seconds)"
+   audio_inport f32 time;
+
+   @name "Time (Beat, Steady)"
+   audio_inport f32 beat_time_steady;
+
+   @name "Beats per frame"
+   audio_inport f32 beat_per_frame;
+
+   /*********/
+   /* Notes */
+   /*********/
+
+   event_inport NoteEvent note_in
+   {
+      if (note_in.type == note_in.NOTE_ON)
+      {
+         // calculate the pitch
+         if (cached_restart_type != SINGLE_RESTART_TYPE ||
+             active_notes == FREE_RESTART_TYPE)
+         {
+            f64 pitch_hz = 440 * pow(2.0, (note_in.key - 69).f64 / 12);
+            pitch_phase_inc = pitch_hz / EC.samplerate;
+         }
+
+         // restart the phase
+         if (cached_restart_type == GATE_RESTART_TYPE ||
+             (cached_restart_type == SINGLE_RESTART_TYPE && active_notes == 0))
+         {
+            send restart_out true;
+            phase = 0;
+         }
+         else if (cached_restart_type == GATE_SYNC_RESTART_TYPE ||
+             (cached_restart_type == SINGLE_SYNC_RESTART_TYPE && active_notes == 0))
+         {
+            send restart_out true;
+            phase = ((beat_time * rate_type_value) % 1.0).f64;
+         }
+         if (cached_restart_type == KEY_RND_RESTART_TYPE ||
+             (cached_restart_type == HARD_SYNC_SWING_RESTART_TYPE && active_notes == 0))
+         {
+            send restart_out true;
+            phase = (rand() % 4096).f64 / 4096.0;
+         }
+
+         ++active_notes;
+      }
+      else if (note_in.type == note_in.NOTE_OFF)
+      {
+         --active_notes;
+      }
+   }
+
+   /***********/
+   /* Outputs */
+   /***********/
+
+   @name "Phase"
+   audio_outport f32 phase_out;
+
+   @name "Restart"
+   event_outport bool restart_out;
+
+   @name "Pendulum"
+   value_inport bool pendulum
+   {
+      if (pendulum)
+      {
+         phase = phase / 2;
+      }
+      else
+      {
+         if (phase < 0.5)
+            phase = 2 * phase;
+         else
+            phase = 1 - 2 * (phase - 0.5);
+      }
+   }
+
+   /****************/
+   /****************/
+   /* Local values */
+   i32 cached_rate_type = -1;
+   i32 cached_restart_type = -1;
+   i32 sync_type = 0;
+
+   f32 rate_type_value = 1;
+   f64 free_beat_time = 0;
+   f64 free_time = 0;
+   f64 phase = 0;
+   f64 pitch_phase_inc = 0;
+   f64 time_phase_inc = 0;
+   i32 active_notes = 0;
+
+   start
+   {
+      phase = 0;
+      active_notes = 0;
+   }
+
+   process
+   {
+      if (cached_rate_type != rate_type)
+      {
+         setRateType(rate_type);
+      }
+
+      if (cached_restart_type != restart_type)
+      {
+         setRestartType(restart_type);
+      }
+
+      /////////////////////////////
+      // Calculate the phase out //
+      /////////////////////////////
+
+      if (!loop)
+      {
+         f32 real_phase = phase.f32 + phase_mod;
+         if (real_phase > 1 - EPSYLON)
+            real_phase = 1 - EPSYLON; // let's have a value less than 1.
+         assert(real_phase < 1);
+         phase_out = invert ? (1 - real_phase) : real_phase;
+      }
+      else
+      {
+         f32 real_phase = ((phase + phase_mod.f64) % 1).f32;
+         phase_out = invert ? (1 - real_phase) : real_phase;
+      }
+
+      if (pendulum)
+      {
+         phase_out = phase_out * 2;
+         if (phase_out > 1)
+            phase_out = 2 - phase_out;
+         if (invert)
+            phase_out = 1 - phase_out;
+      }
+
+      //////////////////////////////
+      // Calculate the next phase //
+      //////////////////////////////
+
+      f32 effective_rate_mod = rate_mod * (pendulum ? 0.5 : 1);
+      switch (sync_type)
+      {
+      case BEAT_TIME_SYNC_TYPE:
+         f32 mul = rate_type_value * effective_rate_mod;
+         if (cached_restart_type == 2 || cached_restart_type == 7) /* sync */
+         {
+            if (is_playing)
+            {
+               if (cached_restart_type == 7)
+                  phase = (beat_time_swing * rate_type_value).f64;
+               else
+                  phase = (beat_time * mul).f64;
+            }
+            else
+            {
+               phase = (beat_time_steady * mul).f64;
+            }
+         }
+         else
+         {
+            phase += (beat_per_frame * mul).f64;
+         }
+         break;
+
+      case TIME_SYNC_TYPE:
+         if (cached_restart_type == 2 && is_playing)
+         {
+            phase = (time * effective_rate_mod).f64;
+         }
+         else
+         {
+            phase += time_phase_inc * effective_rate_mod.f64;
+         }
+         break;
+
+      case PITCH_SYNC_TYPE:
+         phase += pitch_phase_inc * effective_rate_mod.f64;
+         break;
+
+      case FROZEN_SYNC_TYPE:
+         /* Nothing to do */
+         break;
+      }
+   }
+
+   post_process_block
+   {
+      if (loop)
+         phase = phase % 1.0;
+   }
+}

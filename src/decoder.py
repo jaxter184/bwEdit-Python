@@ -144,21 +144,21 @@ def parseField(text):
 		#field += 'type : "map<string,object>",\n' + 'data :\n' + '{\n'
 		out = {"type": '', "data": {}}
 		string = ''
-		parseType2 = (text[offset])
-		offset += 1
-		if parseType2 == 0x1:
-			out["type"] = "map<string,object>"
-			stringLength = intConv(text[offset:offset+4])
-			offset += 4
-			string = bigChr(text[offset:offset+stringLength])
-			offset += stringLength
-			out["data"][string] = getClass(text)
-			offset+=1
-		elif parseType2 == 0x0:
-			out["type"] = "map<string,object>"
-			out["data"][''] = None
-		else:
-			out["type"] = "unknown"
+		out["type"] = "map<string,object>"
+		while (text[offset]):
+			parseType2 = text[offset]
+			offset += 1
+			if parseType2 == 0x1:
+				stringLength = intConv(text[offset:offset+4])
+				offset += 4
+				string = bigChr(text[offset:offset+stringLength])
+				offset += stringLength
+				out["data"][string] = getClass(text)
+			elif parseType2 == 0x0:
+				out["data"][''] = None
+			else:
+				out["type"] = "unknown"
+		offset+=1#this might have to be reworked so it only increments when there's something inside the map thingy
 		return out
 	elif parseType == 0x15:	#UUID
 		value = str(uuid.UUID(bytes=text[offset:offset+16]))
@@ -243,6 +243,7 @@ def getParams(text, object):
 				fieldName = names.params[fieldNum] +  '(' + str(fieldNum) + ')'
 			else:
 				fieldName = "missing_field" +  '(' + str(fieldNum) + ')'
+				print("missing field: " + str(fieldNum))
 				unFieldable += 1
 			value = parseField(text)
 		else:

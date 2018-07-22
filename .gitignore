@@ -1,3 +1,9 @@
 *.pyc
+*.cpython-36.pyc
+*.cpython-36
 *.bwdevice
+*.bwclip
+*.bwproject
+*.bwpreset
 output/flattened.txt
+**/__pycache__

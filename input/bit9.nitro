@@ -1,0 +1,192 @@
+import "random";
+
+component bit9
+{
+   audio_inport in;
+   audio_inport f32 quanta;
+   audio_inport f32 threshold;
+   audio_inport f32 freq;
+   audio_inport f32 jitter;
+   audio_inport f32 diffusion;
+   @block_optim value_inport i32 mode;
+   @block_optim value_inport bool ditherIsStereo;
+   value_inport bool square;
+   value_inport i32 rectify;
+   audio_inport f32 freqProbability;
+   value_inport i32 clipMode;
+   audio_inport f32 clipLevel;
+   audio_outport out;
+   audio_outport f32 gateLedOut;
+   audio_outport f32 clippedLedOut;
+   audio_outport f32 quantLedOut;
+   audio_outport f32 gateDispOut;
+   audio_outport f32 clippedDispOut;
+   audio_outport f32 quantDispOut;
+
+   f32<> hold;
+   f32 phase = 0;
+   f32 rate;
+   f32<> error;
+   f32<> error2;
+   f32<> error3;
+   f32<> error4;
+
+   bool<> gated;
+   f32 gatedMean;
+   f32 clipDisplay;
+   f32 clipDisplayMean;
+   f32 quantDisplay;
+   f32 quantDisplayMean;
+
+   Random freqRandom;
+   Random ditherNoise;
+
+   init
+   {
+      freqRandom.seed = rand();
+      ditherNoise.seed = rand();
+   }
+
+   f32<> quant(f32<> x, i32 mode, f32 quanta, f32 diffusion)
+   {
+      if (mode == 0)
+      {
+         const f32 offset = 0.5;
+         return ((round(x / quanta + offset) - offset) * quanta);
+      }
+      else if (mode == 1)
+      {
+         return round(x / quanta) * quanta;
+      }
+      else if (mode == 2)
+      {
+         f32 d = 1-diffusion;
+         f32<> a = error * (1-d) + error2 * d;
+         f32<> b = error2 * (1-d) + error3 * d;
+         f32<> c = error3 * (1-d) + error4 * d;
+         f32<> y = x + (a * (1-d) + b * d)*(1-d) + (b * (1-d) + c * d)*(1-d)*d;
+         f32<> z = floor(y / quanta) * quanta;
+
+         error4 = error3;
+         error3 = error2;
+         error2 = error;
+         error = fmin(0.5, fmax(-0.5, y - z));
+         return z;
+      }
+      else if (mode == 3)
+      {
+         f32<> triNoise;
+         triNoise[0] = ditherNoise.calcF32(true) + ditherNoise.calcF32(true);
+         if (ditherIsStereo)
+         {
+            triNoise[1] = ditherNoise.calcF32(true) + ditherNoise.calcF32(true);
+         }
+         else
+         {
+            triNoise[1] = triNoise[0];
+         }
+         f32<> y = x + quanta * triNoise * 0.25;
+         return floor(y / quanta) * quanta;
+      }
+      return 0;
+   }
+
+   process
+   {
+      f32 rnd = freqRandom.calcF32(true);
+      rate = (1 + jitter * rnd) * freq * (1.0 / EC.samplerate);
+      phase += rate;
+
+      if (phase > 1)
+      {
+         f32 r = freqRandom.calcF32(false);
+
+         if (r < freqProbability)
+         {          
+            f32<> x;
+
+            if (rectify == 0) // OFF
+            {
+               x = in;
+            }
+            else if (rectify == 1) // HALF
+            {
+               x = fmax(0,in);
+            }
+            else if (rectify == 2) // FULL
+            {
+               x = fabs(in);
+            }
+
+
+            if (clipMode != 0)
+            {
+               f32 g = clipLevel*2;
+               x *= g;
+
+               f32<> xbeforeClip = in * g;
+
+               if (clipMode == 1)
+               {
+                  x = (fmax(fmin(x, 1), -1));
+               }
+               else if (clipMode == 2) // FOLD
+               {
+                  f32<> y = x - 2 * floor(0.5 * x);
+                  y = y - fmax(0, 2 * y - 2);
+                  x = copysign(y, x);
+               }
+               else if (clipMode == 3) // WRAP
+               {
+                  x = (0.5*x - 0.5 - floor(0.5*x - 0.5)) * 2 -1;
+               }
+
+               f32<> c = fabs(xbeforeClip-x);
+               clipDisplay = fmin(1, 1000 * (c[0] + c[1]));
+
+               x *= 0.5;
+            }
+            else
+            {
+
+               f32<> c = fabs(in-x);
+               clipDisplay = fmin(1, 1000 * (c[0] + c[1]));
+            }
+
+            if (square)
+            {
+               x = copysign(sqrt(fabs(in)), in);
+            }
+
+            hold = quant(x, mode, quanta, diffusion);
+
+            f32<> dhx = fabs(hold-x);
+            quantDisplay = dhx[0] + dhx[1];
+
+            if (square)
+            {
+               hold = copysign(hold*hold, hold);
+            }
+            gated = (fabs(in) > threshold);
+
+            hold[0] = gated[0] ? hold[0] : 0;
+            hold[1] = gated[1] ? hold[1] : 0;
+         }
+
+         phase = fmin(1, phase - 1);
+      }
+      out = hold;
+
+      f32 c = 0.002;
+      f32 gatedf = (gated[0] || gated[1]) ? 0 : 1;
+      gatedMean = (1-c) * gatedMean + c * gatedf;
+      clipDisplayMean = (1-c) * clipDisplayMean + c * clipDisplay;
+      quantDisplayMean = (1-c) * quantDisplayMean + c * fmin(1, quantDisplay*4);
+      gateLedOut = 1 - gatedMean;
+      clippedLedOut = (1 - gatedMean) * clipDisplayMean;
+      quantLedOut = (1 - gatedMean) * quantDisplayMean;
+      gateDispOut = -gatedMean;
+      clippedDispOut = gateDispOut + 0.5 * clipDisplayMean;
+      quantDispOut = gateDispOut + 0.5 * (clipDisplayMean + quantDisplayMean);
+   }
+}

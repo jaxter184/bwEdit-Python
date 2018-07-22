@@ -1,0 +1,75 @@
+@name "Note Counter"
+component note_counter
+{
+   mono i32 max = 0;
+
+   value_inport i32 steps
+   {
+      max = steps - 1;
+
+      assert counter >= 0;
+      assert steps >= 0;
+   }
+
+   value_inport i32 increment;
+
+   event_inport NoteEvent note_in
+   {
+      assert counter >= 0;
+      assert max >= 0;
+
+      if (note_in.type == note_in.NOTE_ON)
+      {
+         if (counter == -1)
+         {
+            counter = 0;
+         }
+         else
+         {
+            counter = (counter + increment) % (steps);
+            if (counter < 0)
+               counter += (steps);
+         }        
+         val = counter.f32;
+      }
+
+      assert counter >= 0;
+   }
+
+   value_inport i32 reset
+   {
+      assert counter >= 0;
+      assert max >= 0;
+
+      counter = -1;
+   }
+
+   value_inport i32 mode;
+
+   audio_outport f32 out;
+
+   event_outport i32 stepOut;
+
+   mono i32 counter = -1;
+   f32 val = 0;
+
+   process
+   {
+      switch (mode)
+      {
+         case 0: // 0..1
+         out = fmin(1, max >= 1 ? val / (max.f32) : 1);
+         break;
+
+         case 1: // -1..1
+         out = 2 * fmin(1, max >= 1 ? val / (max.f32) : 1) - 1;
+         break;
+
+         case 2: // index
+         out = val;
+         break;
+      }
+
+      send stepOut val.i32;
+   }
+}
