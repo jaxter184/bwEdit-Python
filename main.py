@@ -1,6 +1,6 @@
 import os
 from src import decoder, encoder, extractor
-from src.lib import fs, util, atoms
+from src.lib import fs, util, atoms, route, dicttobw
 from src.lib.luts import typeLists
 
 root_dir = '.\devices'
@@ -19,6 +19,7 @@ def magic(name, directory): #decodes then reencodes a single file
 			extractedClasses.append(classes)
 			extractedFields.append(fields)
 		else:
+			#decode
 			header = header[:11] + '1' + header[12:]
 			output = ''
 			gather = decoder.bwDecode(device_data)
@@ -27,6 +28,8 @@ def magic(name, directory): #decodes then reencodes a single file
 			output = header + decoder.reformat(output)
 			with open('output\\converted ' + name, 'wb') as file:
 				file.write(output.encode("utf-8"))
+			
+			#reencode
 			gather2 = encoder.bwEncode(gather)
 			header = header[:11] + '2' + header[12:]
 			output2 = header.encode('utf-8') + gather2
@@ -35,11 +38,26 @@ def magic(name, directory): #decodes then reencodes a single file
 	#elif (device_data[42] == '{'):
 	#	print("this file is either already converted or isn't an unreadable file")
 	elif (header[11] == '1'):
-		print("this is already converted")
+		device_data = fs.read(os.path.join(directory, name))[40:]
+		i = 1
+		brackSum = 1
+		while brackSum:
+			if device_data[i] == '{':
+				brackSum += 1
+			elif device_data[i] == '}':
+				brackSum -= 1
+			i += 1
+		objectified = [dicttobw.convert(util.json_decode(device_data[:i])),dicttobw.convert(util.json_decode(device_data[i:]))]
+		print(objectified)
+		gather = encoder.bwEncode(objectified)
+		header = header[:11] + '2' + header[12:]
+		output2 = header.encode('utf-8') + gather
+		with open('output\\jsonconv ' + name, 'wb') as file:
+			file.write(output2)
 	else:
 		print("i don't know what kind of file this is")
 
-def x_in_y(query, base):
+def x_in_y(query, base): #got this from online somewhere
     try:
         l = len(query)
     except TypeError:

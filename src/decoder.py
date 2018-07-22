@@ -1,7 +1,9 @@
+#Converts an unreadable byte-based .bwfile into a plaintext json file
+
 import struct
 from collections import OrderedDict
 from src.lib.luts import names, backupObjects
-from src.lib import atoms
+from src.lib import atoms, route
 import uuid
 
 types = {1:'int8',
@@ -114,12 +116,11 @@ def parseField(text):
 		out = atoms.Reference(objNum)
 		return out
 	elif parseType == 0x0d: #structure										#not done yet
-		object = atoms.Atom()
 		headerLength = intConv(text[offset:offset+4])
 		offset += 4
 		if currentSection == 2:
-			offset += 57
-			field = intConv(text[offset:offset+headerLength])
+			#offset += 57 #not sure when to put this in
+			field = str(text[offset:offset+4]) + " - structure placeholder"
 			offset += headerLength
 		elif headerLength<54:
 			print("short header at " + hex(offset))
@@ -128,7 +129,7 @@ def parseField(text):
 			field = getClass(text)
 			stringMode = 0
 		else:
-			field = intConv(text[offset:offset+headerLength])
+			field = "structure placeholder"
 			offset += headerLength
 		return field
 	elif parseType == 0x12:	#object array
@@ -182,17 +183,23 @@ def parseField(text):
 			arr.append(text[offset:offset+strLength].decode("utf-8"))
 			offset+=strLength
 		return arr
-	elif parseType == 0x1a: #fuck if i know								#not done yet
+	elif parseType == 0x1a: #source?													#not done yet
 		#print("shit,1a ")
 		strLength = 0
-		while (text[offset] == 0x00):
-			strLength = intConv(text[offset:offset+4])
-			offset += 4
-			if strLength  == 0x90:
-				return ''
-		field = text[offset:offset+strLength].decode("utf-8")
+		numLength = 0
+		numLength = intConv(text[offset:offset+4])
+		offset += 4
+		if numLength == 0x90:
+			return (None, None)
+		numVal = intConv(text[offset:offset+4*numLength])
+		offset += 4*numLength
+		
+		strLength = intConv(text[offset:offset+4])
+		offset += 4
+		strVal = str(text[offset:offset+strLength].decode("utf-8"))
 		offset += strLength
-		return field
+		
+		return route.Route(numVal, strVal)
 		
 	else:
 		endFlag = 1
@@ -239,7 +246,7 @@ def getParams(text, object):
 				unFieldable += 1
 			value = parseField(text)
 		else:
-			print("weird field detected at " + hex(offset))
+			print("weird field detected at " + hex(offset) + ". field id: " + str(fieldNum))
 			fieldName = text[offset:offset+fieldNum].decode()
 			offset += fieldNum
 			value = atoms.Atom(fieldName)

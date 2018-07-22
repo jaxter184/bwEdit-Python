@@ -1,3 +1,5 @@
+#list of nodes for the graphical node device/modulator editor
+
 list = {
 	#values
 	'float_core.decimal_value_atom(289)': {

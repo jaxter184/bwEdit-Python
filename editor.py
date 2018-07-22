@@ -1,3 +1,5 @@
+#this is where the graphical node editor happens
+
 import tkinter as tk
 import random
 import math
@@ -951,7 +953,6 @@ class NodeEditorCanvas(tk.Frame):
 	
 	def treeifyData(self): #makes 3 trees: child_components, panels, and outports. outports is a singleton tree, but is used to root the child_components tree.
 		self.tempAtomList = copy.deepcopy(self.atomList)
-		self.refList = []
 		subClasses = {"child_components(173)":[],"panels(6213)":[],"proxy_in_ports(177)":[],"proxy_out_ports(178)":[],}
 
 		#find main roots
@@ -977,10 +978,10 @@ class NodeEditorCanvas(tk.Frame):
 				else:
 					print("nothing connected to the out port")
 				self.tempAtomList[i] = None
-			elif obj.classname == "float_core.panel(1680)":
-				subClasses["panels(6213)"].append(obj)
-				self.tempAtomList[i] = None
-
+			#elif obj.classname == "float_core.panel(1680)":
+			#	subClasses["panels(6213)"].append(obj)
+			#	self.tempAtomList[i] = None
+		subClasses["panels(6213)"] = self.paneList
 		#find other roots
 		for i in range(len(self.tempAtomList)):
 			if self.tempAtomList[i] and "settings(6194)" in self.tempAtomList[i].fields and len(self.RortList) > i: #for all atoms that exist
@@ -1006,13 +1007,15 @@ class NodeEditorCanvas(tk.Frame):
 						self.tempAtomList[i] = None
 
 		#build trees
+		self.refList = [] #the list of references appended to the end of the child_components(173) list
 		for field in subClasses:
 			for i in range(len(subClasses[field])):
 				subClasses[field][i] = self._treeify(subClasses[field][i])
+				
 
 		#add the child component reference list
 		newRefList = []
-		for ref in self.refList:
+		for ref in self.refList: #get rid of certain 
 			if self.atomList[ref.id].classname == "float_core.proxy_in_port_component(154)":
 				type = self.atomList[self.atomList[ref.id].fields["port(301)"].id].classname
 				if type == "float_core.audio_port(242)":
@@ -1031,6 +1034,7 @@ class NodeEditorCanvas(tk.Frame):
 			self.data[1].fields[field] = subClasses[field]
 		self.refIDs = {}
 		self._renumber(self.data)
+		del self.refIDs
 	
 	def _treeify(self, component):
 		if isinstance(component, atoms.Reference):

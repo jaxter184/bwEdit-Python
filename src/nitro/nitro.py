@@ -1,3 +1,5 @@
+#modules that deal primarily with parsing nitro code
+
 def countIOs(text):
 	length = len(text)
 	i = 0

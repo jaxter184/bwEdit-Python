@@ -55,7 +55,7 @@ def parseField():
 		headerLength = intConv(text[offset:offset+4])
 		offset += 4
 		if currentSection == 2:
-			offset += 57
+			#offset += 57 #not sure when to put this in
 			offset += headerLength
 		elif headerLength<54:
 			print("short header at " + hex(offset))

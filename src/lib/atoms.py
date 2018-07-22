@@ -1,3 +1,4 @@
+#Class declarations of atoms and references and special data types that only atoms use (modified from original)
 #author: stylemistake https://github.com/stylemistake
 
 from collections import OrderedDict
@@ -220,7 +221,8 @@ class Atom:
 			elif typeLists.fieldList[fieldNum] == 0x14:
 				output += bytearray.fromhex('14')
 				if '' in value["type"]:
-					print("empty string: this shouldnt happen in devices and presets")
+					#print("empty string: this shouldnt happen in devices and presets")
+					pass
 				else:
 					output += bytearray.fromhex('01')
 					for key in value["data"]:
@@ -241,8 +243,18 @@ class Atom:
 				for item in value:
 					flVal = hex(struct.unpack('<I', struct.pack('<f', item))[0])[2:]
 					output += hexPad(flVal,8)
+			elif typeLists.fieldList[fieldNum] == 0x19: #string array
+				output += bytearray.fromhex('19')
+				output += hexPad(len(value), 8)
+				for i in value:
+					i = i.replace('\\n', '\n')
+					output += hexPad(len(i), 8)
+					output.extend(i.encode('utf-8'))
 			else:
-				print("jaxter stop being a lazy poop and " + str(typeLists.fieldList[fieldNum]) + " to the atom encoder")
+				if typeLists.fieldList[fieldNum] == None:
+					print("atoms.py: 'None' in atom encoder. obj: " + str(fieldNum))
+				else:
+					print("jaxter stop being a lazy poop and " + hex(typeLists.fieldList[fieldNum]) + " to the atom encoder. obj: " + str(fieldNum))
 		return output
 
 	def encode(self):

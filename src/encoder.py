@@ -1,6 +1,6 @@
 import struct
 from collections import OrderedDict
-from src.lib import atoms
+from src.lib import atoms, route
 
 endFlag = 0
 
@@ -45,7 +45,7 @@ def bwEncode(objList):
 			if isinstance(object, atoms.Atom):
 				output += object.encode()
 			else:
-				print('something went wrong, but im gonna keep going. For reference, the oopsie woopsie fucky wucky code is \'section 1 in bwEncode\'')
+				print('something went wrong, but im gonna keep going. For reference, \'section 1 in bwEncode\'')
 		currentSection+=1
 	print("encode complete")
 	return output
