@@ -12,15 +12,19 @@ Editor commands:
 
 ## Changelogs  
 
+Changelog v0.6.3:  
+-Added device UI panel viewer  
+-Changed a bunch of little things  
+
+I was unsuccessful in my attempts to document stuff more. Maybe next time.
+
+Previous changelogs:
+
 Changelog v0.6.2:  
--Fixed Linux and Windows 7 icon loading issues (unconfirmed) 
+-Fixed Linux and Windows 7 icon loading issues (unconfirmed)  
 -Fixed nitro port number counting   
 -Fixed FX chain atom (no longer crashes Bitwig)  
 -Added nitro code export  
-
-A couple fixes. To be honest, I haven't really been keeping track of what I've been doing. I'll try to document stuff more.
-
-Previous changelogs:
 
 Changelog v0.6.1:  
 -Revamped data structures (basically fancy talk for "i organize the numbers differently")  
